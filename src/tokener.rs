@@ -1,26 +1,40 @@
-use crate::ErrorKind::{SyntaxError, EOF};
 use crate::{Error, ErrorKind, JsonArray, JsonObject, JsonValue, Result};
 use core::slice;
 
 pub struct JsonTokener {
     chars: Vec<char>,
     pos: usize,
+    len: usize,
 }
 
 const BOM: &str = "\u{feff}";
 
 impl JsonTokener {
-    // 创建并解析器
+    fn next(&mut self) -> char {
+        let ch = self.chars[self.pos];
+        self.pos += 1;
+        ch
+    }
+
+    fn currnet(&self) -> char {
+        self.chars[self.pos]
+    }
+
+    fn sub_str(&self, start: usize, end: usize) -> String {
+        self.chars[start..end].iter().collect()
+    }
+
     pub fn new(str: &str) -> JsonTokener {
+        // remove bom prefix
         let str = if str.starts_with(BOM) {
             &str[BOM.len()..]
         } else {
             str
         };
-        JsonTokener {
-            chars: str.chars().collect(),
-            pos: 0,
-        }
+
+        let chars: Vec<char> = str.chars().collect();
+        let len = chars.len();
+        JsonTokener { chars, pos: 0, len }
     }
 
     pub fn next_value(&mut self) -> Result<JsonValue> {
@@ -47,28 +61,30 @@ impl JsonTokener {
 
     // 跳过空白字符和注释(/**/, //, #)
     fn next_clean_internal(&mut self) -> Result<char> {
-        let len = self.chars.len();
-        while self.pos < len {
-            let &c = self.chars.get(self.pos).unwrap();
-            self.pos += 1;
-            match c {
+        while self.pos < self.len {
+            match self.next() {
                 // 跳过空白字符
                 '\t' | ' ' | '\n' | '\r' => continue,
-
+                // 跳过注释
                 '/' => {
-                    if self.pos == len {
-                        return Ok(c);
+                    if self.pos == self.len {
+                        return Ok('/');
                     }
-                    match *self.chars.get(self.pos).unwrap() {
+                    match self.currnet() {
                         '*' => {
-                            self.pos += 1; // to next char
+                            // to next char
+                            self.pos += 1;
 
-                            // find comment end
+                            // end comment of C style
                             let comment_end = index_of_all(&self.chars, &['*', '/'], self.pos);
 
                             match comment_end {
                                 // return error if not found
-                                None => return Err(Error { kind: SyntaxError }),
+                                None => {
+                                    return JsonTokener::syntax_error(
+                                        "can't found comment end of C style(*/)",
+                                    )
+                                }
                                 Some(end) => {
                                     self.pos = end + 2;
                                     continue;
@@ -82,7 +98,7 @@ impl JsonTokener {
                             continue;
                         }
                         // return '/'
-                        _ => return Ok(c),
+                        _ => return Ok('/'),
                     }
                 }
                 '#' => {
@@ -90,12 +106,12 @@ impl JsonTokener {
                     self.skip_to_end_of_line();
                     continue;
                 }
-                _ => {
+                c => {
                     return Ok(c);
                 }
             }
         }
-        Err(Error { kind: EOF })
+        Err(Error::new(ErrorKind::EOF, "need next char but return EOF"))
     }
 
     // 跳到行尾部
@@ -104,7 +120,7 @@ impl JsonTokener {
         if let Some(pos) = end_of_line {
             self.pos = pos + 1;
         } else {
-            self.pos = self.chars.len();
+            self.pos = self.len;
         }
     }
 
@@ -130,30 +146,37 @@ impl JsonTokener {
                 //  include them because that's what the original implementation did.
                 let separator = self.next_clean_internal()?;
                 if separator != ':' && separator != '=' {
-                    return JsonTokener::syntax_error();
+                    return JsonTokener::syntax_error(
+                        "after key must have : or => separator in object",
+                    );
                 }
 
                 // if has a char '>' after ':' or '=', then ignore it.
-                if self.pos < self.chars.len() && self.chars[self.pos] == '>' {
+                if self.pos < self.len && self.currnet() == '>' {
                     self.pos += 1;
                 }
 
+                // push json value
                 let value = self.next_value()?;
                 json_object.insert(name, value);
 
                 match self.next_clean_internal()? {
                     '}' => {
+                        // end
                         return Ok(json_object);
                     }
                     ';' | ',' => {
+                        // more field
                         continue;
                     }
                     _ => {
-                        return JsonTokener::syntax_error();
+                        return JsonTokener::syntax_error(
+                            "after value only '}' ';' ',' allow in object",
+                        );
                     }
                 }
             } else {
-                return JsonTokener::syntax_error();
+                return JsonTokener::syntax_error("must has a key for non-empty object");
             }
         }
     }
@@ -194,7 +217,9 @@ impl JsonTokener {
                     continue;
                 }
                 _ => {
-                    return JsonTokener::syntax_error();
+                    return JsonTokener::syntax_error(
+                        "after value only ']' ',' ';' allow in array",
+                    );
                 }
             }
         }
@@ -206,36 +231,37 @@ impl JsonTokener {
 
         let mut start = self.pos;
 
-        let len = self.chars.len();
-        while self.pos < len {
-            let ch = self.chars[self.pos];
-            self.pos += 1;
-
+        while self.pos < self.len {
+            let ch = self.next();
             if ch == quote {
-                let str: String = self.chars[start..self.pos - 1].iter().collect();
-                builder.push_str(&str);
+                builder.push_str(&self.sub_str(start, self.pos - 1));
                 return Ok(builder);
             }
 
             if ch == '\\' {
-                if self.pos >= self.chars.len() {
-                    return JsonTokener::syntax_error();
+                if self.pos >= self.len {
+                    return Err(Error::new(
+                        ErrorKind::EOF,
+                        "ready to read escape character in string but get EOF",
+                    ));
                 }
-                let str: String = self.chars[start..self.pos - 1].iter().collect();
-                builder.push_str(&str);
+                builder.push_str(&self.sub_str(start, self.pos - 1));
                 let escape_str = self.read_escape_character()?;
                 builder.push(escape_str);
                 start = self.pos;
             }
         }
-        JsonTokener::syntax_error()
+        return Err(Error::new(
+            ErrorKind::EOF,
+            "read string expect quote but get EOF",
+        ));
     }
 
     // 读取一个值
     fn read_literal(&mut self) -> Result<JsonValue> {
         let literal = self.next_to_internal(&"{}[]/\\:,=;# \t\x0C");
         if literal.len() <= 0 {
-            return JsonTokener::syntax_error();
+            return JsonTokener::syntax_error("read a literal but get empty");
         }
         if literal.eq_ignore_ascii_case("null") {
             return Ok(JsonValue::None);
@@ -253,8 +279,8 @@ impl JsonTokener {
             return Ok(JsonValue::Float(value));
         }
 
-        let mut base = 10;
         let positive;
+        let mut base = 10;
 
         let number = if literal.starts_with("0x") || literal.starts_with("0X") {
             base = 16;
@@ -280,22 +306,27 @@ impl JsonTokener {
 
     // 读取一个转义字符
     fn read_escape_character(&mut self) -> Result<char> {
-        let ch = self.chars[self.pos];
-        self.pos += 1;
-        return match ch {
+        return match self.next() {
             'u' => {
-                if self.pos + 4 > self.chars.len() {
-                    return JsonTokener::syntax_error();
+                // return error if get eof
+                if self.pos + 4 > self.len {
+                    return Err(Error::new(ErrorKind::EOF, "read unicode get EOF"));
                 }
-                let str: String = self.chars[self.pos..self.pos + 4].iter().collect();
+
+                // get escape unicode string
+                let unicode_str = self.sub_str(self.pos, self.pos + 4);
                 self.pos += 4;
-                let u = u32::from_str_radix(&str, 16)?;
+
+                // convert escape unicode string to unicode char
+                let u = u32::from_str_radix(&unicode_str, 16)?;
+
                 if let Some(ch) = char::from_u32(u) {
                     Ok(ch)
                 } else {
-                    Err(Error {
-                        kind: ErrorKind::NumberParseError,
-                    })
+                    Err(Error::new(
+                        ErrorKind::CastError,
+                        "convert escape unicode string to unicode char failed",
+                    ))
                 }
             }
             't' => Ok('\t'),
@@ -303,27 +334,27 @@ impl JsonTokener {
             'n' => Ok('\n'),
             'r' => Ok('\r'),
             'f' => Ok('\x0C'),
-            _ => Ok(ch), // '\'' | '"' | '\\'
+            ch => Ok(ch), // '\'' | '"' | '\\'
         };
     }
 
-    // 兑取下一个字面量
+    // 取下一个字面量
     fn next_to_internal(&mut self, excluded: &str) -> String {
         let start = self.pos;
-        let len = self.chars.len();
-        while self.pos < len {
-            let ch = self.chars[self.pos];
+
+        while self.pos < self.len {
+            let ch = self.currnet(); 
             if ch == '\r' || ch == '\n' || excluded.chars().any(|c| c == ch) {
-                return self.chars[start..self.pos].iter().collect();
+                return self.sub_str(start, self.pos);
             }
             self.pos += 1;
         }
-        self.chars[start..].iter().collect()
+        self.sub_str(start, self.len)
     }
 
     // 语法错误
-    fn syntax_error<T>() -> Result<T> {
-        Err(Error { kind: SyntaxError })
+    fn syntax_error<T>(msg: &'static str) -> Result<T> {
+        Err(Error::new(ErrorKind::SyntaxError, msg))
     }
 }
 

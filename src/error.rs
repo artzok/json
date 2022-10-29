@@ -3,6 +3,13 @@ use std::num::{ParseFloatError, ParseIntError};
 #[derive(Debug)]
 pub struct Error {
     pub kind: ErrorKind,
+    pub msg: &'static str,
+}
+
+impl Error {
+    pub fn new(kind: ErrorKind, msg: &'static str) -> Error {
+        Error { kind, msg }
+    }
 }
 
 #[derive(Debug)]
@@ -19,6 +26,7 @@ impl From<ParseIntError> for Error {
     fn from(_: ParseIntError) -> Self {
         Error {
             kind: NumberParseError,
+            msg: "parse to int error"
         }
     }
 }
@@ -27,6 +35,7 @@ impl From<ParseFloatError> for Error {
     fn from(_: ParseFloatError) -> Self {
         Error {
             kind: NumberParseError,
+            msg: "parse to float error"
         }
     }
 }
