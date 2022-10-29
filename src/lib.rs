@@ -13,25 +13,62 @@ pub use json_array::JsonArray;
 pub use json_object::JsonObject;
 pub use json_value::JsonValue;
 
-///
-/// 全局解析方法，传入字符串，如果解析成功，则返回 `Ok(JsonValue)`
-/// 如果解析失败，则返回 `Err(Error{kind: xxx})`
-///
+/// Global parse method for convenient.
+/// 
+/// Return `Ok(JsonValue)` if success.
+/// Return `Err(Error)` if parse failed.
+/// 
+/// # Examples
+/// 
+/// Basic usage:
+/// 
+/// ```
+/// let str = "{\"key\":\"value\"}";
+/// let json = json::parse(str).unwrap();
+/// assert_eq!(json.to_string(), str);
+/// ```
+/// 
 pub fn parse(str: &str) -> Result<JsonValue> {
     return tokener::JsonTokener::new(str).next_value();
 }
 
+/// A specialized [`Result`] type for JSON operations.
 ///
-/// json 解析获取存取结果
+/// This type is broadly used across `json` package for any operation which may
+/// produce an error.
 ///
+/// This typedef is generally used to avoid writing out [`Error`] directly and
+/// is otherwise a direct mapping to [`Result`].
+///
+/// # See also:
+/// 
+/// [`parse`] method return type.
+/// ```
 pub type Result<T> = result::Result<T, Error>;
 
-/// 内部使用：将 JsonValue 构建为 String 的方法
+/// use to build JSON string from [`JsonValue`], for internal use only.
 trait JsonBuilder {
     fn build(&self, json: String, pretty: bool, level: usize, indent: &str) -> String;
 }
 
-/// 公开用法：将 JsonValue 转为 String 类型
+/// Public trait for convert [`JsonValue`] to JSON string.
+/// 
+/// All json element must implement this trait. Includes:
+/// 
+/// 1. [`JsonValue`]
+/// 2. [`JsonObject`]
+/// 3. [`JsonArray`]
+/// 
+/// # Examples:
+/// 
+/// ```
+/// use json::ToJson; 
+///
+/// let str = "{\"key\" : \"value\", \"array\": [1, \"rust\", false, 12.5]}";
+/// let json = json::parse(str).unwrap();
+/// println!("{}", json.pretty());
+/// ```
+/// 
 pub trait ToJson {
     fn pretty(&self) -> String;
     fn to_json(&self, pretty: bool, indent: &str) -> String;
