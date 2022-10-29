@@ -329,7 +329,7 @@ impl JsonTokener {
 
 ///
 /// 从 list 中 查找 find
-/// 
+///
 #[allow(dead_code)]
 pub fn index_of<T>(list: &[T], find: &T, from: usize) -> Option<usize>
 where
@@ -365,7 +365,7 @@ where
 }
 
 ///
-/// 从 list 中连续找到 finds 所有成员的首个索引 
+/// 从 list 中连续找到 finds 所有成员的首个索引
 fn index_of_all<T>(list: &[T], finds: &[T], from: usize) -> Option<usize>
 where
     T: Eq,
@@ -385,7 +385,6 @@ where
     let first = &finds[0];
 
     for (index, item) in list[from..].iter().enumerate() {
-
         if item == first {
             let mut pos = 1;
 

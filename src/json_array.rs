@@ -1,4 +1,4 @@
-use std::{iter, fmt::Display};
+use std::{fmt::Display, iter};
 
 use crate::{JsonBuilder, JsonValue, ToJson};
 
@@ -13,7 +13,6 @@ pub struct JsonArray {
 }
 
 impl JsonArray {
-
     pub fn new() -> JsonArray {
         JsonArray { list: vec![] }
     }
@@ -24,7 +23,6 @@ impl JsonArray {
 }
 
 impl JsonBuilder for JsonArray {
-
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         json.push('[');
 
@@ -50,7 +48,6 @@ impl JsonBuilder for JsonArray {
 
         // push \n
         if pretty {
-
             json.push('\n');
 
             if level > 0 {
@@ -58,21 +55,20 @@ impl JsonBuilder for JsonArray {
                 json.push_str(&indents);
             }
         }
-        
+
         json.push(']');
         json
     }
 }
 
 impl Display for JsonArray {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.build(String::new(), false, 0, ""))
     }
 }
 
 impl ToJson for JsonArray {
-    fn pretty(&self) ->String {
+    fn pretty(&self) -> String {
         self.to_json(true, "| ")
     }
 

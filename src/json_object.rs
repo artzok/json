@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter, fmt::Display};
+use std::{collections::HashMap, fmt::Display, iter};
 
 use crate::{JsonBuilder, JsonValue, ToJson};
 
@@ -13,7 +13,6 @@ pub struct JsonObject {
 }
 
 impl JsonObject {
-
     pub fn new() -> JsonObject {
         JsonObject {
             map: HashMap::new(),
@@ -26,7 +25,6 @@ impl JsonObject {
 }
 
 impl JsonBuilder for JsonObject {
-
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         json.push('{');
 
@@ -77,7 +75,6 @@ impl Display for JsonObject {
 }
 
 impl ToJson for JsonObject {
-
     fn pretty(&self) -> String {
         self.to_json(true, "| ")
     }

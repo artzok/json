@@ -20,7 +20,11 @@ fn main() {
 
     if let Ok(str) = std::fs::read_to_string(name) {
         let json = json::parse(&str).unwrap();
-        let json = if pretty { json.pretty() } else { json.to_string() };
+        let json = if pretty {
+            json.pretty()
+        } else {
+            json.to_string()
+        };
         println!("the file json:\n{}", json);
     }
 }
