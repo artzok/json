@@ -1,67 +1,39 @@
-use std::{fmt::{Display, write}, result, io};
+extern crate core;
 
-mod json_array;
-mod json_field;
+mod tokener;
+mod json_value;
 mod json_object;
+mod json_array;
+mod error;
+
+use std::result;
+
+pub use json_array::JsonArray;
+pub use json_value::JsonValue;
+pub use  json_object::JsonObject;
+
+pub use error::{Error, ErrorKind};
 
 ///
-/// JSON 元素类型：
-/// * Object: {}
-/// * Array: []
-/// * Field: i32, bool, String ect.
-///
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ElementType {
-    Object,
-    Array,
-    Field,
+/// 全局解析方法，传入字符串，如果解析成功，则返回 `Ok(JsonValue)`
+/// 如果解析失败，则返回 `Err(Error{kind: xxx})` 
+/// 
+pub fn parse(str: &str) -> Result<JsonValue> {
+    return tokener::JsonTokener::new(str).next_value();
 }
 
 ///
-/// JSON 元素类型必须实现的 trait
-///
-/// 通过 get_type 获取类型枚举可以用来在运行时判断 `trait object` 所属类型
-///
-trait JSONElement {
-    fn get_type(&self) -> ElementType;
-}
-
-///
-/// JSON 解析错误
-///
-pub struct Error {
-    pub kind: ErrorKind,
-}
-
-impl From<ErrorKind> for Error {
-    fn from(kind: ErrorKind) -> Self {
-        Self { kind }
-    }
-}
-
-///
-/// JSON 解析错误类型
-///
-pub enum ErrorKind {
-    NotFound,
-    TypeError,
-}
-
-impl ErrorKind {
-    pub fn as_str(&self) -> &'static str {
-        return match self {
-            Self::NotFound => "NotFound: Not found value of the key",
-            Self::TypeError => "TypeError: the value of the key not match",
-             _ => ""
-        }
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.kind.as_str())
-        // TODO other info
-    }
-}
-
+/// json 解析获取存取结果
+/// 
 pub type Result<T> = result::Result<T, Error>;
+
+/// 内部使用：将 JsonValue 构建为 String 的方法
+trait JsonBuilder {
+    fn build(&self, json: String, pretty: bool, level: usize, indent: &str) -> String;
+}
+
+/// 公开用法：将 JsonValue 转为 String 类型 
+pub trait ToJson {
+    fn pretty(&self) ->String;
+    fn to_json(&self, pretty: bool, indent: &str) -> String;
+}

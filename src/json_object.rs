@@ -1,77 +1,88 @@
-use crate::{ElementType, ErrorKind, JSONElement, Result};
+use std::{collections::HashMap, iter, fmt::Display};
 
-use std::{borrow::Borrow, collections::HashMap, fmt::Display, hash::Hash};
+use crate::{JsonBuilder, JsonValue, ToJson};
 
 ///
-/// JSON [`ElementType::Object`] 元素类型
+/// [`JsonValue::Object`] 内部数据存储类型
 ///
-/// 其内部以 `key-value` 形式存储 [`ElementType::Object`]、
-/// [`ElementType::Array`]、[`ElementType::Field`]
+/// 其内部使用 [`HashMap<String, JsonValue>`] 形式存储键值对
 ///
-pub struct JSONObject {
-    map: HashMap<String, Box<dyn JSONElement>>,
+#[derive(Debug)]
+pub struct JsonObject {
+    map: HashMap<String, JsonValue>,
 }
 
-impl JSONElement for JSONObject {
-    fn get_type(&self) -> ElementType {
-        ElementType::Object
+impl JsonObject {
+
+    pub fn new() -> JsonObject {
+        JsonObject {
+            map: HashMap::new(),
+        }
+    }
+
+    pub fn insert(&mut self, key: String, value: JsonValue) {
+        self.map.insert(key, value);
     }
 }
 
-impl JSONObject {
-    ///
-    /// Returns a reference to the value corresponding to the key.
-    ///
-    /// The key may be any borrowed form of the [`String`] type, but
-    /// [`Hash`] and [`Eq`] on the borrowed form **must** match those for
-    /// the [`String`] type.
-    ///
-    fn get<Q: ?Sized>(&self, key: &Q) -> Option<&Box<dyn JSONElement>>
-    where
-        String: Borrow<Q>,
-        Q: Hash + Eq + Display,
-    {
-        self.map.get(key)
-    }
+impl JsonBuilder for JsonObject {
 
-    ///
-    ///
-    pub fn get_i32<Q: ?Sized>(&self, key: &Q) -> Result<i32>
-    where
-        String: Borrow<Q>,
-        Q: Hash + Eq + Display,
-    {
-        let value = self.get(key);
+    fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
+        json.push('{');
 
-        // if not found return Error
-        if let Some(v) = value {
-            match v.get_type() {
-                ElementType::Array |
-                ElementType::Object => {
-                    return Result::Err(ErrorKind::TypeError.into());
-                }
-                ElementType::Field => {
-                    let f = v.as_ref();
-                }
+        let last = self.map.len() - 1;
+        let indents: String = iter::repeat(indent).take(level + 1).collect();
+
+        for (index, (key, value)) in self.map.iter().enumerate() {
+            // push indents
+            if pretty {
+                json.push('\n');
+                json.push_str(&indents);
             }
-        } else {
-            return Result::Err(ErrorKind::NotFound.into());
+
+            // push sep
+            json.push_str(&format!("\"{}\":", key));
+
+            if pretty {
+                json.push(' ');
+            }
+
+            // push value
+            json = value.build(json, pretty, level + 1, indent);
+
+            // push ,
+            if index < last {
+                json.push(',');
+            }
         }
 
-        Result::Ok(0)
+        // push \n
+        if pretty {
+            json.push('\n');
+
+            if level > 0 {
+                let indents: String = iter::repeat(indent).take(level).collect();
+                json.push_str(&indents);
+            }
+        }
+        json.push('}');
+        json
     }
 }
 
-#[cfg(test)]
-mod test {
+impl Display for JsonObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.build(String::new(), false, 0, ""))
+    }
+}
 
-    use super::*;
+impl ToJson for JsonObject {
 
-    #[test]
-    fn check_type() {
-        let object = JSONObject {
-            map: HashMap::new(),
-        };
-        assert_eq!(object.get_type(), ElementType::Object);
+    fn pretty(&self) -> String {
+        self.to_json(true, "| ")
+    }
+
+    fn to_json(&self, pretty: bool, indent: &str) -> String {
+        self.build(String::new(), pretty, 0, indent)
     }
 }
