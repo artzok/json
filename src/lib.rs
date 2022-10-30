@@ -46,7 +46,7 @@ pub fn parse(str: &str) -> Result<JsonValue> {
 /// ```
 pub type Result<T> = result::Result<T, Error>;
 
-/// use to build JSON string from [`JsonValue`], for internal use only.
+/// Use to build JSON string from [`JsonValue`], for internal use only.
 trait JsonBuilder {
     fn build(&self, json: String, pretty: bool, level: usize, indent: &str) -> String;
 }

@@ -1,32 +1,31 @@
-use std::{fmt::Display, str::Chars};
+use std::fmt::Display;
 
 use crate::{JsonArray, JsonBuilder, JsonObject, ToJson};
 
 ///
-/// Json 所有元素类型
+/// All JSON element type.
 ///
-/// [`JsonValue::None`] 表示 'null' or 'NULL'(ignore case)
+/// [`JsonValue::None`] is 'null' value(ignore case).
 ///
-/// [`JsonValue::Bool`] 表示  'false' or 'true'(ignore case)
+/// [`JsonValue::Bool`] is `bool` value, only equal `false` or `true`(ignore case).
 ///
-/// [`JsonValue::Int`] 表示所有负整数，其内部使用有符号 `i128` 类型存储值
+/// [`JsonValue::Int`] is all negative integer, internal use of `i128` type save value.
 ///
-/// [`JsonValue::Uint`] 表示所有正整数，其内部使用无符号 `u128` 类型存储
+/// [`JsonValue::Uint`] is all positive integer， internal use of `u128` type save value.
 ///
-/// [`JsonValue::Int`] 和 `JsonValue::Uint` 只是为了简化解析过程，其内部存储
-/// 类型并不代表最终类型，用户获取对应值时会根据返回值的类型取转换，比如：
-/// 1. json 字符串中有一个正整数 128，解析后 `JsonValue` 会使用 [`JsonValue::Uint`]
-/// 存储，但用户在访问时却可以调用 `get_i32` 方法获取该值，其内部将会自动转换，但是需要注意
-/// 这里可能发生溢出
+/// [`JsonValue::Int`] 和 [`JsonValue::Uint`] only for simple parse and save, internal save
+/// type not final type, will to cast specify type when user to get value. eg:
+/// Value `100` will save by `Uint(u128)` type, but you can use `JsonObject::get_i32` or 
+/// `JsonObject::get_i16` ect, internal will use `as` to cast return type.
 ///
-/// 2. json 中有一个负数 -128，解析后 `JsonValue` 会使用 [`JsonValue::Int`] 存储，此时
-/// 如果用户通过 `get_u32` 方法获取该值时，则会发生 [`crate::ErrorKind::CastError`]
+/// **Note:** `as` opteration maybe loss of precision or error result, but the `json` library 
+/// doesn't do any processing. 
 ///
-/// [`JsonValue::String`] 表示一个普通字符串值
+/// [`JsonValue::String`] is a string value, all escape sequences have been escaped.
 ///
-/// [`JsonValue::Object`] 表示嵌套对象
+/// [`JsonValue::Object`] is nest JSON ojbect, internal use [`JsonObject`] save values.
 ///
-/// [`JsonValue::Array`] 表示嵌套列表
+/// [`JsonValue::Array`] is nest JSON array, internal use [`JsonArray`] save values.
 ///
 #[derive(Debug)]
 pub enum JsonValue {
@@ -40,6 +39,7 @@ pub enum JsonValue {
     Array(JsonArray),
 }
 
+/// Build JSON string, for internal use.
 impl JsonBuilder for JsonValue {
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         match self {
@@ -60,22 +60,31 @@ impl JsonBuilder for JsonValue {
     }
 }
 
+/// for to string and print, internal use [`JsonBuilder`] implement.
 impl Display for JsonValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.build(String::new(), false, 0, ""))
     }
 }
 
+/// convert to string implement.
 impl ToJson for JsonValue {
+    /// Convert JsonValue to pretty json string.
     fn pretty(&self) -> String {
         self.to_json(true, "| ")
     }
 
+    /// Convert JsonValue to style json string.
+    /// 
+    /// If `pretty` is true, will use '\n' to convert pretty json string.
+    /// 
+    /// `indent` is prefix of every line, only use when `pretty` is true.
     fn to_json(&self, pretty: bool, indent: &str) -> String {
         self.build(String::new(), pretty, 0, indent)
     }
 }
 
+/// Convert special character to escape sequence.
 fn replace_escape(str: &str) -> String {
     str.chars()
         .map(|ch| match ch {
