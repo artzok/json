@@ -77,8 +77,8 @@ impl ToJson for JsonValue {
 }
 
 fn replace_escape(str: &str) -> String {
-    str.chars().map(|ch| {
-         match ch {
+    str.chars()
+        .map(|ch| match ch {
             '\\' => "\\\\".to_string(),
             '\"' => "\\\"".to_string(),
             '\x0C' => "\\f".to_string(),
@@ -86,7 +86,7 @@ fn replace_escape(str: &str) -> String {
             '\n' => "\\n".to_string(),
             '\x08' => "\\b".to_string(),
             '\r' => "\\r".to_string(),
-            ch =>  ch.to_string(),
-        }
-    }).collect()
+            ch => ch.to_string(),
+        })
+        .collect()
 }

@@ -1,16 +1,16 @@
 use std::{
-    fmt::{Display},
+    fmt::Display,
     num::{ParseFloatError, ParseIntError},
 };
 
 ///
 /// Json parse or operations fail info.
-/// 
+///
 /// `kind` indication error kind.
-/// 
+///
 /// `msg` has more specific description.
-/// 
-/// 
+///
+///
 #[derive(Debug)]
 pub struct Error {
     pub kind: ErrorKind,
@@ -18,16 +18,16 @@ pub struct Error {
 }
 
 /// All kind of json parse or operations error.
-/// 
+///
 /// [`ErrorKind::EOF`] An error returned when an operation could not be completed because an
 /// "end of file" was reached prematurely.
-/// 
+///
 /// [`ErrorKind::SyntaxError`] Get a not expect character.
-/// 
+///
 /// [`ErrorKind::NumberParseError`] Parse integer or float number error.
-/// 
+///
 /// [`CastError`] Except type and save type not match or parse escape character error.
-/// 
+///
 /// [`NotFound`] Not found value of key.
 ///
 #[derive(Debug)]
@@ -35,7 +35,7 @@ pub enum ErrorKind {
     EOF,
     SyntaxError,
     NumberParseError,
-    CastError, 
+    CastError,
     NotFound,
 }
 

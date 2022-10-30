@@ -43,7 +43,7 @@ impl JsonObject {
         }
     }
 
-     ///
+    ///
     /// 如果不存在返回  not found error
     /// 如果类型不匹配返回  cast error
     /// 如果对应 key 的值是 null 则返回 Ok(None)
@@ -89,17 +89,17 @@ impl JsonObject {
     /// 如果对应 key 的值是 null 则返回 Ok(None)
     /// 如果对应 key 的值是 i28 or u128, will to convert by as
     /// 否则返回 Ok(value)
-    pub fn get_i64<Q :?Sized>(&self, key: &Q) -> Result<Option<i64>>
+    pub fn get_i64<Q: ?Sized>(&self, key: &Q) -> Result<Option<i64>>
     where
         String: Borrow<Q>,
-        Q: Hash + Eq
+        Q: Hash + Eq,
     {
         match self.get(key) {
             None => Err(Error::new(ErrorKind::NotFound, "Not found i64 value")),
             Some(JsonValue::None) => Ok(None),
             Some(&JsonValue::Int(i)) => Ok(Some(i as i64)),
             Some(&JsonValue::Uint(u)) => Ok(Some(u as i64)),
-            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")), 
+            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")),
         }
     }
 
@@ -109,17 +109,17 @@ impl JsonObject {
     /// 如果对应 key 的值是 null 则返回 Ok(None)
     /// 如果对应 key 的值是 i28 or u128, will to convert by as
     /// 否则返回 Ok(value)
-    pub fn get_i128<Q :?Sized>(&self, key: &Q) -> Result<Option<i128>>
+    pub fn get_i128<Q: ?Sized>(&self, key: &Q) -> Result<Option<i128>>
     where
         String: Borrow<Q>,
-        Q: Hash + Eq
+        Q: Hash + Eq,
     {
         match self.get(key) {
             None => Err(Error::new(ErrorKind::NotFound, "Not found i128 value")),
             Some(JsonValue::None) => Ok(None),
             Some(&JsonValue::Int(i)) => Ok(Some(i)),
             Some(&JsonValue::Uint(u)) => Ok(Some(u as i128)),
-            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")), 
+            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")),
         }
     }
 
@@ -143,7 +143,7 @@ impl JsonObject {
         }
     }
 
-     ///
+    ///
     /// 如果不存在返回  not found error
     /// 如果类型不匹配返回  cast error
     /// 如果对应 key 的值是 null 则返回 Ok(None)
@@ -189,17 +189,17 @@ impl JsonObject {
     /// 如果对应 key 的值是 null 则返回 Ok(None)
     /// 如果对应 key 的值是 i28 or u128, will to convert by as
     /// 否则返回 Ok(value)
-    pub fn get_u64<Q :?Sized>(&self, key: &Q) -> Result<Option<u64>>
+    pub fn get_u64<Q: ?Sized>(&self, key: &Q) -> Result<Option<u64>>
     where
         String: Borrow<Q>,
-        Q: Hash + Eq
+        Q: Hash + Eq,
     {
         match self.get(key) {
             None => Err(Error::new(ErrorKind::NotFound, "Not found u64 value")),
             Some(JsonValue::None) => Ok(None),
             Some(&JsonValue::Int(i)) => Ok(Some(i as u64)),
             Some(&JsonValue::Uint(u)) => Ok(Some(u as u64)),
-            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")), 
+            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")),
         }
     }
 
@@ -209,24 +209,24 @@ impl JsonObject {
     /// 如果对应 key 的值是 null 则返回 Ok(None)
     /// 如果对应 key 的值是 i28 or u128, will to convert by as
     /// 否则返回 Ok(value)
-    pub fn get_u128<Q :?Sized>(&self, key: &Q) -> Result<Option<u128>>
+    pub fn get_u128<Q: ?Sized>(&self, key: &Q) -> Result<Option<u128>>
     where
         String: Borrow<Q>,
-        Q: Hash + Eq
+        Q: Hash + Eq,
     {
         match self.get(key) {
             None => Err(Error::new(ErrorKind::NotFound, "Not found u128 value")),
             Some(JsonValue::None) => Ok(None),
             Some(&JsonValue::Int(i)) => Ok(Some(i as u128)),
             Some(&JsonValue::Uint(u)) => Ok(Some(u)),
-            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")), 
+            _ => Err(Error::new(ErrorKind::CastError, "value type not integer")),
         }
     }
 
-    pub fn get_bool<Q :?Sized>(&self, _: &Q) -> Result<Option<bool>>
+    pub fn get_bool<Q: ?Sized>(&self, _: &Q) -> Result<Option<bool>>
     where
         String: Borrow<Q>,
-        Q: Hash + Eq
+        Q: Hash + Eq,
     {
         Ok(Some(false))
     }

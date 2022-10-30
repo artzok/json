@@ -1,5 +1,3 @@
-
-
 fn main() {
     // let mut args = std::env::args();
     // args.next(); // ingore program name
@@ -31,5 +29,4 @@ fn main() {
     let str = "'\\\\, \\\", \\f, \\t, \\n, \\b, \\r \\'\"'";
     let json = json::parse(str).unwrap();
     println!("{}", json)
-    
 }
