@@ -27,6 +27,8 @@ pub struct Error {
 /// [`ErrorKind::NumberParseError`] Parse integer or float number error.
 /// 
 /// [`CastError`] Except type and save type not match or parse escape character error.
+/// 
+/// [`NotFound`] Not found value of key.
 ///
 #[derive(Debug)]
 pub enum ErrorKind {
@@ -34,6 +36,7 @@ pub enum ErrorKind {
     SyntaxError,
     NumberParseError,
     CastError, 
+    NotFound,
 }
 
 impl Error {

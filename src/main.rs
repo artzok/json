@@ -1,5 +1,4 @@
 
-use json::ToJson;
 
 fn main() {
     // let mut args = std::env::args();
@@ -26,19 +25,11 @@ fn main() {
     //     };
     //     println!("the file json:\n{}", json);
     // }
-    let str = "{\"key\" : \"value\", \"array\": [1, \"rust\", false, 12.5]}";
-    let result =
-r#"{
-| "key": "value",
-| "array": [
-| | 1,
-| | "rust",
-| | false,
-| | 12.5
-| ]
-}"#;
-    let json = json::parse(str).unwrap();
-    assert_eq!(result, json.pretty());
 
-    std::io::ErrorKind::UnexpectedEof
+    // let str = "json.put("中国\uD83D\uDE39", str)"
+
+    let str = "\"\\u003E\\uD83D\\uDE39\"";
+    let json = json::parse(str).unwrap();
+    println!("{}", json)
+    
 }

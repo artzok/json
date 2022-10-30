@@ -13,6 +13,7 @@ pub struct JsonArray {
 }
 
 impl JsonArray {
+
     pub fn new() -> JsonArray {
         JsonArray { list: vec![] }
     }
@@ -23,6 +24,7 @@ impl JsonArray {
 }
 
 impl JsonBuilder for JsonArray {
+
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         json.push('[');
 
@@ -62,12 +64,14 @@ impl JsonBuilder for JsonArray {
 }
 
 impl Display for JsonArray {
+
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.build(String::new(), false, 0, ""))
     }
 }
 
 impl ToJson for JsonArray {
+
     fn pretty(&self) -> String {
         self.to_json(true, "| ")
     }

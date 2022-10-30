@@ -238,6 +238,10 @@ impl JsonTokener {
                 return Ok(builder);
             }
 
+            if ch == '\r' || ch == '\n' {
+                return Err(Error::new(ErrorKind::SyntaxError, "string can't contain \r or \n"));
+            } 
+
             if ch == '\\' {
                 if self.pos >= self.len {
                     return Err(Error::new(
@@ -307,7 +311,7 @@ impl JsonTokener {
     // 读取一个转义字符
     fn read_escape_character(&mut self) -> Result<char> {
         return match self.next() {
-            'u' => {
+            'u' => { // "\ud834"
                 // return error if get eof
                 if self.pos + 4 > self.len {
                     return Err(Error::new(ErrorKind::EOF, "read unicode get EOF"));
@@ -318,9 +322,28 @@ impl JsonTokener {
                 self.pos += 4;
 
                 // convert escape unicode string to unicode char
-                let u = u32::from_str_radix(&unicode_str, 16)?;
+                let mut unicode = u32::from_str_radix(&unicode_str, 16)?;
 
-                if let Some(ch) = char::from_u32(u) {
+                if unicode >= 0xD800 {
+
+                    // check next code escape prefix \u
+                    if self.next() != '\\' || self.next() != 'u' {
+                        return Err(Error::new(ErrorKind::SyntaxError, 
+                            "fail read next unicode, beacuse not found \\u"));
+                    }
+                    // check eof
+                    if self.pos + 4 > self.len {
+                        return Err(Error::new(ErrorKind::EOF, "read next unicode code get EOF"));
+                    }
+
+                    // get sub code str
+                    let sub_unicode_str = self.sub_str(self.pos, self.pos + 4);
+                    self.pos += 4;
+                    let sub_unicode = u32::from_str_radix(&sub_unicode_str, 16)?;
+                     unicode = (((unicode - 0xD800) << 10) | (sub_unicode - 0xDC00)) + 0x10000
+                }
+
+                if let Some(ch) = char::from_u32(unicode) {
                     Ok(ch)
                 } else {
                     Err(Error::new(
@@ -334,7 +357,11 @@ impl JsonTokener {
             'n' => Ok('\n'),
             'r' => Ok('\r'),
             'f' => Ok('\x0C'),
-            ch => Ok(ch), // '\'' | '"' | '\\'
+            '\'' => Ok('\''),
+            '\"' => Ok('\"'),
+            '\\' => Ok('\\'),
+            '/' => Ok('/'), 
+            _  => Err(Error::new(ErrorKind::SyntaxError, "error escape"))
         };
     }
 

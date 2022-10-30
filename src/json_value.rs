@@ -41,6 +41,7 @@ pub enum JsonValue {
 }
 
 impl JsonBuilder for JsonValue {
+
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         match self {
             JsonValue::None => json.push_str("null"),
@@ -61,12 +62,14 @@ impl JsonBuilder for JsonValue {
 }
 
 impl Display for JsonValue {
+
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.build(String::new(), false, 0, ""))
     }
 }
 
 impl ToJson for JsonValue {
+
     fn pretty(&self) -> String {
         self.to_json(true, "| ")
     }
