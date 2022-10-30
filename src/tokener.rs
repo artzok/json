@@ -16,7 +16,7 @@ impl JsonTokener {
         ch
     }
 
-    fn currnet(&self) -> char {
+    fn current(&self) -> char {
         self.chars[self.pos]
     }
 
@@ -70,7 +70,7 @@ impl JsonTokener {
                     if self.pos == self.len {
                         return Ok('/');
                     }
-                    match self.currnet() {
+                    match self.current() {
                         '*' => {
                             // to next char
                             self.pos += 1;
@@ -152,7 +152,7 @@ impl JsonTokener {
                 }
 
                 // if has a char '>' after ':' or '=', then ignore it.
-                if self.pos < self.len && self.currnet() == '>' {
+                if self.pos < self.len && self.current() == '>' {
                     self.pos += 1;
                 }
 
@@ -239,8 +239,11 @@ impl JsonTokener {
             }
 
             if ch == '\r' || ch == '\n' {
-                return Err(Error::new(ErrorKind::SyntaxError, "string can't contain \r or \n"));
-            } 
+                return Err(Error::new(
+                    ErrorKind::SyntaxError,
+                    "string can't contain \r or \n",
+                ));
+            }
 
             if ch == '\\' {
                 if self.pos >= self.len {
@@ -311,7 +314,8 @@ impl JsonTokener {
     // 读取一个转义字符
     fn read_escape_character(&mut self) -> Result<char> {
         return match self.next() {
-            'u' => { // "\ud834"
+            'u' => {
+                // "\ud834"
                 // return error if get eof
                 if self.pos + 4 > self.len {
                     return Err(Error::new(ErrorKind::EOF, "read unicode get EOF"));
@@ -325,11 +329,12 @@ impl JsonTokener {
                 let mut unicode = u32::from_str_radix(&unicode_str, 16)?;
 
                 if unicode >= 0xD800 {
-
                     // check next code escape prefix \u
                     if self.next() != '\\' || self.next() != 'u' {
-                        return Err(Error::new(ErrorKind::SyntaxError, 
-                            "fail read next unicode, beacuse not found \\u"));
+                        return Err(Error::new(
+                            ErrorKind::SyntaxError,
+                            "fail read next unicode, beacuse not found \\u",
+                        ));
                     }
                     // check eof
                     if self.pos + 4 > self.len {
@@ -340,7 +345,7 @@ impl JsonTokener {
                     let sub_unicode_str = self.sub_str(self.pos, self.pos + 4);
                     self.pos += 4;
                     let sub_unicode = u32::from_str_radix(&sub_unicode_str, 16)?;
-                     unicode = (((unicode - 0xD800) << 10) | (sub_unicode - 0xDC00)) + 0x10000
+                    unicode = (((unicode - 0xD800) << 10) | (sub_unicode - 0xDC00)) + 0x10000
                 }
 
                 if let Some(ch) = char::from_u32(unicode) {
@@ -360,8 +365,8 @@ impl JsonTokener {
             '\'' => Ok('\''),
             '\"' => Ok('\"'),
             '\\' => Ok('\\'),
-            '/' => Ok('/'), 
-            _  => Err(Error::new(ErrorKind::SyntaxError, "error escape"))
+            '/' => Ok('/'),
+            _ => Err(Error::new(ErrorKind::SyntaxError, "error escape")),
         };
     }
 
@@ -370,7 +375,7 @@ impl JsonTokener {
         let start = self.pos;
 
         while self.pos < self.len {
-            let ch = self.currnet(); 
+            let ch = self.current();
             if ch == '\r' || ch == '\n' || excluded.chars().any(|c| c == ch) {
                 return self.sub_str(start, self.pos);
             }

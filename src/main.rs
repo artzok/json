@@ -28,7 +28,7 @@ fn main() {
 
     // let str = "json.put("中国\uD83D\uDE39", str)"
 
-    let str = "\"\\u003E\\uD83D\\uDE39\"";
+    let str = "'\\\\, \\\", \\f, \\t, \\n, \\b, \\r \\'\"'";
     let json = json::parse(str).unwrap();
     println!("{}", json)
     

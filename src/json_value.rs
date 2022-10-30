@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::Chars};
 
 use crate::{JsonArray, JsonBuilder, JsonObject, ToJson};
 
@@ -41,7 +41,6 @@ pub enum JsonValue {
 }
 
 impl JsonBuilder for JsonValue {
-
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         match self {
             JsonValue::None => json.push_str("null"),
@@ -49,7 +48,7 @@ impl JsonBuilder for JsonValue {
             JsonValue::Int(i) => json.push_str(&i.to_string()),
             JsonValue::Uint(u) => json.push_str(&u.to_string()),
             JsonValue::Float(d) => json.push_str(&d.to_string()),
-            JsonValue::String(s) => json.push_str(&format!("\"{}\"", s)),
+            JsonValue::String(s) => json.push_str(&format!("\"{}\"", replace_escape(s))),
             JsonValue::Array(array) => {
                 json = JsonBuilder::build(array, json, pretty, level, indent);
             }
@@ -62,14 +61,12 @@ impl JsonBuilder for JsonValue {
 }
 
 impl Display for JsonValue {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.build(String::new(), false, 0, ""))
     }
 }
 
 impl ToJson for JsonValue {
-
     fn pretty(&self) -> String {
         self.to_json(true, "| ")
     }
@@ -77,4 +74,19 @@ impl ToJson for JsonValue {
     fn to_json(&self, pretty: bool, indent: &str) -> String {
         self.build(String::new(), pretty, 0, indent)
     }
+}
+
+fn replace_escape(str: &str) -> String {
+    str.chars().map(|ch| {
+         match ch {
+            '\\' => "\\\\".to_string(),
+            '\"' => "\\\"".to_string(),
+            '\x0C' => "\\f".to_string(),
+            '\t' => "\\t".to_string(),
+            '\n' => "\\n".to_string(),
+            '\x08' => "\\b".to_string(),
+            '\r' => "\\r".to_string(),
+            ch =>  ch.to_string(),
+        }
+    }).collect()
 }
