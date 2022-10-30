@@ -9,21 +9,10 @@ pub struct JsonTokener {
 
 const BOM: &str = "\u{feff}";
 
+///
+/// Parser of json string.
 impl JsonTokener {
-    fn next(&mut self) -> char {
-        let ch = self.chars[self.pos];
-        self.pos += 1;
-        ch
-    }
-
-    fn current(&self) -> char {
-        self.chars[self.pos]
-    }
-
-    fn sub_str(&self, start: usize, end: usize) -> String {
-        self.chars[start..end].iter().collect()
-    }
-
+    /// Create and init parser.
     pub fn new(str: &str) -> JsonTokener {
         // remove bom prefix
         let str = if str.starts_with(BOM) {
@@ -37,6 +26,40 @@ impl JsonTokener {
         JsonTokener { chars, pos: 0, len }
     }
 
+    /// Get the current `pos` character and advance `pos` to next one.
+    fn next(&mut self) -> char {
+        let ch = self.chars[self.pos];
+        self.pos += 1;
+        ch
+    }
+
+    /// Just get the current `pos` charactor.
+    fn current(&self) -> char {
+        self.chars[self.pos]
+    }
+
+    /// `pos` plus `offset` will exceed `len - 1`.
+    fn will_eof(&self, offset: usize) -> bool {
+        return self.pos + offset >= self.len;
+    }
+
+    /// `pos` go back to the previous position.
+    fn back(&mut self) {
+        self.pos -= 1;
+    }
+    
+    // `pos` to next one.
+    fn advance(&mut self, offset: usize) {
+        self.pos += offset;
+    }
+
+    /// Create sub string from chars.
+    fn sub_str(&self, start: usize, end: usize) -> String {
+        self.chars[start..end].iter().collect()
+    }
+
+
+    /// parse next JSON element.
     pub fn next_value(&mut self) -> Result<JsonValue> {
         let c = self.next_clean_internal()?;
         return match c {
@@ -53,7 +76,7 @@ impl JsonTokener {
                 Ok(JsonValue::String(str))
             }
             _ => {
-                self.pos -= 1;
+                self.back();
                 self.read_literal()
             }
         };
@@ -67,13 +90,13 @@ impl JsonTokener {
                 '\t' | ' ' | '\n' | '\r' => continue,
                 // 跳过注释
                 '/' => {
-                    if self.pos == self.len {
+                    if self.will_eof(0) {
                         return Ok('/');
                     }
                     match self.current() {
                         '*' => {
                             // to next char
-                            self.pos += 1;
+                            self.advance(1);
 
                             // end comment of C style
                             let comment_end = index_of_all(&self.chars, &['*', '/'], self.pos);
@@ -93,7 +116,8 @@ impl JsonTokener {
                         }
                         '/' => {
                             // to next line and continue
-                            self.pos += 1;
+                            self.advance(1);
+
                             self.skip_to_end_of_line();
                             continue;
                         }
@@ -136,7 +160,7 @@ impl JsonTokener {
         if self.next_clean_internal()? == '}' {
             return Ok(json_object);
         } else {
-            self.pos -= 1;
+            self.back();
         }
 
         loop {
@@ -152,8 +176,8 @@ impl JsonTokener {
                 }
 
                 // if has a char '>' after ':' or '=', then ignore it.
-                if self.pos < self.len && self.current() == '>' {
-                    self.pos += 1;
+                if !self.will_eof(0) && self.current() == '>' {
+                    self.advance(1);
                 }
 
                 // push json value
@@ -201,7 +225,7 @@ impl JsonTokener {
                     continue;
                 }
                 _ => {
-                    self.pos -= 1;
+                    self.back();
                 }
             }
 
@@ -246,7 +270,7 @@ impl JsonTokener {
             }
 
             if ch == '\\' {
-                if self.pos >= self.len {
+                if self.will_eof(0) {
                     return Err(Error::new(
                         ErrorKind::EOF,
                         "ready to read escape character in string but get EOF",
@@ -315,15 +339,14 @@ impl JsonTokener {
     fn read_escape_character(&mut self) -> Result<char> {
         return match self.next() {
             'u' => {
-                // "\ud834"
-                // return error if get eof
-                if self.pos + 4 > self.len {
+                // return error if get eof, need 4 char
+                if self.will_eof(3) {
                     return Err(Error::new(ErrorKind::EOF, "read unicode get EOF"));
                 }
 
                 // get escape unicode string
                 let unicode_str = self.sub_str(self.pos, self.pos + 4);
-                self.pos += 4;
+                self.advance(4);
 
                 // convert escape unicode string to unicode char
                 let mut unicode = u32::from_str_radix(&unicode_str, 16)?;
@@ -336,14 +359,14 @@ impl JsonTokener {
                             "fail read next unicode, beacuse not found \\u",
                         ));
                     }
-                    // check eof
-                    if self.pos + 4 > self.len {
+                    // check eof: need 4 char
+                    if self.will_eof(3) {
                         return Err(Error::new(ErrorKind::EOF, "read next unicode code get EOF"));
                     }
 
                     // get sub code str
                     let sub_unicode_str = self.sub_str(self.pos, self.pos + 4);
-                    self.pos += 4;
+                    self.advance(4);
                     let sub_unicode = u32::from_str_radix(&sub_unicode_str, 16)?;
                     unicode = (((unicode - 0xD800) << 10) | (sub_unicode - 0xDC00)) + 0x10000
                 }
