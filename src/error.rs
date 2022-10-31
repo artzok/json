@@ -31,6 +31,8 @@ pub struct Error {
 /// [`NotFound`] Not found value of key.
 /// 
 /// [`TypeNotMatch`] Type mismatch.
+/// 
+/// [`ValueNull`] Return null of the key.
 ///
 #[derive(Debug)]
 pub enum ErrorKind {

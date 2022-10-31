@@ -215,12 +215,12 @@ impl JsonTokener {
             match self.next_clean_internal()? {
                 ']' => {
                     if has_trailing_separator {
-                        json_array.push(JsonValue::None);
+                        json_array.push(JsonValue::Null);
                     }
                     return Ok(json_array);
                 }
                 ',' | ';' => {
-                    json_array.push(JsonValue::None);
+                    json_array.push(JsonValue::Null);
                     has_trailing_separator = true;
                     continue;
                 }
@@ -295,7 +295,7 @@ impl JsonTokener {
             return JsonTokener::syntax_error("read a literal but get empty");
         }
         if literal.eq_ignore_ascii_case("null") {
-            return Ok(JsonValue::None);
+            return Ok(JsonValue::Null);
         }
         if literal.eq_ignore_ascii_case("true") {
             return Ok(JsonValue::Bool(true));

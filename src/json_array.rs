@@ -1,6 +1,6 @@
 use std::{fmt::Display, iter};
 
-use crate::{JsonBuilder, JsonValue, ToJson};
+use crate::{tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson};
 
 ///
 /// [`JsonValue::Array`] 内部数据存储类型
@@ -13,12 +13,78 @@ pub struct JsonArray {
 }
 
 impl JsonArray {
+    /// Create empty array.
     pub fn new() -> JsonArray {
         JsonArray { list: vec![] }
     }
 
-    pub fn push(&mut self, value: JsonValue) {
-        self.list.push(value);
+    /// Parse `json` to [`JsonArray`].
+    ///
+    /// Return [`ErrorKind::TypeNotMatch`] if the parsed result
+    /// is not a [`JsonValue::Array`].
+    pub fn create(json: &str) -> Result<JsonArray> {
+        let json_value = JsonTokener::new(json).next_value()?;
+        if let JsonValue::Array(array) = json_value {
+            Ok(array)
+        } else {
+            Err(Error::new(
+                ErrorKind::TypeNotMatch,
+                "Need JsonValue::Array but not.",
+            ))
+        }
+    }
+
+    /// Add a [`JsonValue`].
+    pub fn push<T: Into<JsonValue>>(&mut self, value: T) {
+        self.list.push(value.into());
+    }
+
+    /// Add a [`JsonValue`] on `index`.
+    ///
+    /// #Paincs
+    ///
+    /// Panics if `index > len`.
+    pub fn insert<T: Into<JsonValue>>(&mut self, value: T, index: usize) {
+        self.list.insert(index, value.into())
+    }
+
+    /// Get value borrow of position `index`.
+    /// 
+    /// Return [`None`] if `index` out of bounds.
+    pub fn get(&self, index: usize) -> Option<&JsonValue> {
+        self.list.get(index)
+    }
+
+    /// Get value mut borrow of position `index`.
+    /// 
+    /// Return [`None`] if `index` out of bounds.
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut JsonValue> {
+        self.list.get_mut(index)
+    }
+
+    /// Check value is [`JsonValue::Null`] of position `index`.
+    pub fn is_null(&self, index: usize) -> bool {
+        if let Some(JsonValue::Null) = self.get(index) {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Remove and return value of position `index`.
+    /// 
+    /// Return [`None`] if `index` out of bounds.
+    pub fn remove(&mut self, index: usize) -> Option<JsonValue> {
+        if index < self.len() {
+            Some(self.list.remove(index))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the number of values in this array.
+    pub fn len(&self) -> usize {
+        self.list.len()
     }
 }
 

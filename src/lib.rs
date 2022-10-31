@@ -5,6 +5,7 @@ mod json_array;
 mod json_object;
 mod json_value;
 mod tokener;
+mod utils;
 
 use std::result;
 

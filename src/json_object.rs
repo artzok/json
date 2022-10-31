@@ -1,7 +1,7 @@
 use std::{borrow::Borrow, collections::HashMap, fmt::Display, hash::Hash, iter};
 
 use crate::{
-    json_value, tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson, JsonArray,
+    json_value, tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson, JsonArray, utils,
 };
 
 /// A modifiable set of name/value mappings. Names are unique, non-null strings.
@@ -51,8 +51,8 @@ impl JsonObject {
 
     /// Maps `key` to `value`, clobbering any existing
     /// key/value mapping with the same name.
-    pub fn insert(&mut self, key: String, value: JsonValue) {
-        self.map.insert(key, value);
+    pub fn insert<T: Into<JsonValue>>(&mut self, key: String, value: T) {
+        self.map.insert(key, value.into());
     }
 
     /// Get value borrow of `key`.
@@ -88,18 +88,18 @@ impl JsonObject {
     /// Appends `value` to the array already mapped to `name`. If
     /// this object has no mapping for `name`, this inserts
     ///  a new mapping.
-    pub fn accumulate(&mut self, key: String, value: JsonValue) {
+    pub fn accumulate<T: Into<JsonValue>>(&mut self, key: String, value: T) {
         match self.remove(&key) {
             None => self.insert(key, value),
             Some(mut current) => match current {
                 JsonValue::Array(ref mut array) => {
-                    array.push(value);
+                    array.push(value.into());
                     self.insert(key, current);
                 }
                 _ => {
                     let mut array = JsonArray::new();
                     array.push(current);
-                    array.push(value);
+                    array.push(value.into());
                     self.insert(key, JsonValue::Array(array));
                 }
             },
@@ -123,7 +123,7 @@ impl JsonBuilder for JsonObject {
 
             // push sep
             json.push('\"');
-            json.push_str(&json_value::replace_escape(key));
+            json.push_str(&utils::replace_escape(key));
             json.push_str("\":");
 
             if pretty {

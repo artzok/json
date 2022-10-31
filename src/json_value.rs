@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Error, ErrorKind, JsonArray, JsonBuilder, JsonObject, Result, ToJson};
+use crate::{utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonObject, Result, ToJson};
 
 ///
 /// All JSON element type.
@@ -29,7 +29,7 @@ use crate::{Error, ErrorKind, JsonArray, JsonBuilder, JsonObject, Result, ToJson
 ///
 #[derive(Debug, Clone)]
 pub enum JsonValue {
-    None,
+    Null,
     Bool(bool),
     Int(i128),
     Uint(u128),
@@ -43,14 +43,14 @@ pub enum JsonValue {
 impl JsonBuilder for JsonValue {
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         match self {
-            JsonValue::None => json.push_str("null"),
+            JsonValue::Null => json.push_str("null"),
             JsonValue::Bool(b) => json.push_str(if *b { "fasle" } else { "true" }),
             JsonValue::Int(i) => json.push_str(&i.to_string()),
             JsonValue::Uint(u) => json.push_str(&u.to_string()),
             JsonValue::Float(d) => json.push_str(&d.to_string()),
             JsonValue::String(s) => {
                 json.push('\"');
-                json.push_str(&replace_escape(s));
+                json.push_str(&utils::replace_escape(s));
                 json.push('\"');
             }
             JsonValue::Array(array) => {
@@ -89,93 +89,9 @@ impl ToJson for JsonValue {
 }
 
 impl JsonValue {
-    pub fn null() -> JsonValue {
-        JsonValue::None
-    }
-
-    pub fn bool(value: bool) -> JsonValue {
-        JsonValue::Bool(value)
-    }
-
-    pub fn i8(value: i8) -> JsonValue {
-        if value > 0 {
-            JsonValue::Uint(value as u128)
-        } else {
-            JsonValue::Int(value.into())
-        }
-    }
-
-    pub fn i16(value: i16) -> JsonValue {
-        if value > 0 {
-            JsonValue::Uint(value as u128)
-        } else {
-            JsonValue::Int(value.into())
-        }
-    }
-
-    pub fn i32(value: i16) -> JsonValue {
-        if value > 0 {
-            JsonValue::Uint(value as u128)
-        } else {
-            JsonValue::Int(value.into())
-        }
-    }
-
-    pub fn i64(value: i64) -> JsonValue {
-        if value > 0 {
-            JsonValue::Uint(value as u128)
-        } else {
-            JsonValue::Int(value.into())
-        }
-    }
-
-    pub fn i128(value: i128) -> JsonValue {
-        if value > 0 {
-            JsonValue::Uint(value as u128)
-        } else {
-            JsonValue::Int(value)
-        }
-    }
-
-    pub fn u8(value: u8) -> JsonValue {
-        JsonValue::Uint(value.into())
-    }
-
-    pub fn u16(value: u16) -> JsonValue {
-        JsonValue::Uint(value.into())
-    }
-
-    pub fn u32(value: u32) -> JsonValue {
-        JsonValue::Uint(value.into())
-    }
-
-    pub fn u64(value: u64) -> JsonValue {
-        JsonValue::Uint(value.into())
-    }
-
-    pub fn u128(value: u128) -> JsonValue {
-        JsonValue::Uint(value)
-    }
-
-    pub fn f32(value: f32) -> JsonValue {
-        JsonValue::Float(value.into())
-    }
-
-    pub fn f64(value: f64) -> JsonValue {
-        JsonValue::Float(value)
-    }
-
-    pub fn object(value: JsonObject) -> JsonValue {
-        JsonValue::Object(value)
-    }
-
-    pub fn array(value: JsonArray) -> JsonValue {
-        JsonValue::Array(value)
-    }
-
     pub fn as_bool(&self) -> Result<bool> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Bool(value) => Ok(*value),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need bool")),
         }
@@ -183,7 +99,7 @@ impl JsonValue {
 
     pub fn as_i8(&self) -> Result<i8> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as i8),
             JsonValue::Int(value) => Ok(*value as i8),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need i8")),
@@ -192,7 +108,7 @@ impl JsonValue {
 
     pub fn as_i16(&self) -> Result<i16> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as i16),
             JsonValue::Int(value) => Ok(*value as i16),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need i16")),
@@ -201,7 +117,7 @@ impl JsonValue {
 
     pub fn as_i32(&self) -> Result<i32> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as i32),
             JsonValue::Int(value) => Ok(*value as i32),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need i32")),
@@ -210,7 +126,7 @@ impl JsonValue {
 
     pub fn as_i64(&self) -> Result<i64> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as i64),
             JsonValue::Int(value) => Ok(*value as i64),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need i64")),
@@ -219,7 +135,7 @@ impl JsonValue {
 
     pub fn as_i128(&self) -> Result<i128> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as i128),
             JsonValue::Int(value) => Ok(*value),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need i128")),
@@ -228,7 +144,7 @@ impl JsonValue {
 
     pub fn as_u8(&self) -> Result<u8> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as u8),
             JsonValue::Int(value) => {
                 if *value > 0 {
@@ -246,7 +162,7 @@ impl JsonValue {
 
     pub fn as_u16(&self) -> Result<u16> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as u16),
             JsonValue::Int(value) => {
                 if *value > 0 {
@@ -264,7 +180,7 @@ impl JsonValue {
 
     pub fn as_u32(&self) -> Result<u32> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as u32),
             JsonValue::Int(value) => {
                 if *value > 0 {
@@ -282,7 +198,7 @@ impl JsonValue {
 
     pub fn as_u64(&self) -> Result<u64> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as u64),
             JsonValue::Int(value) => {
                 if *value > 0 {
@@ -300,7 +216,7 @@ impl JsonValue {
 
     pub fn as_u128(&self) -> Result<u128> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as u128),
             JsonValue::Int(value) => {
                 if *value > 0 {
@@ -318,7 +234,7 @@ impl JsonValue {
 
     pub fn as_f32(&self) -> Result<f32> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as f32),
             JsonValue::Int(value) => Ok(*value as f32),
             JsonValue::Float(value) => Ok(*value as f32),
@@ -328,7 +244,7 @@ impl JsonValue {
 
     pub fn as_f64(&self) -> Result<f64> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Uint(value) => Ok(*value as f64),
             JsonValue::Int(value) => Ok(*value as f64),
             JsonValue::Float(value) => Ok(*value),
@@ -338,7 +254,7 @@ impl JsonValue {
 
     pub fn as_str(&self) -> Result<&str> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::String(str) => Ok(str),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need string")),
         }
@@ -346,7 +262,7 @@ impl JsonValue {
 
     pub fn as_mut_str(&mut self) -> Result<&mut str> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::String(str) => Ok(str),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need string")),
         }
@@ -354,7 +270,7 @@ impl JsonValue {
 
     pub fn as_string(self) -> Result<String> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::String(str) => Ok(str),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need string")),
         }
@@ -362,7 +278,7 @@ impl JsonValue {
 
     pub fn as_object_ref(&self) -> Result<&JsonObject> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Object(object) => Ok(object),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need json object")),
         }
@@ -370,7 +286,7 @@ impl JsonValue {
 
     pub fn as_object_mut_ref(&mut self) -> Result<&mut JsonObject> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Object(object) => Ok(object),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need json object")),
         }
@@ -378,7 +294,7 @@ impl JsonValue {
 
     pub fn as_object(self) -> Result<JsonObject> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Object(object) => Ok(object),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need json object")),
         }
@@ -386,7 +302,7 @@ impl JsonValue {
 
     pub fn as_array_ref(&self) -> Result<&JsonArray> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Array(array) => Ok(array),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need json array")),
         }
@@ -394,7 +310,7 @@ impl JsonValue {
 
     pub fn as_array_mut_ref(&mut self) -> Result<&mut JsonArray> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Array(array) => Ok(array),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need json array")),
         }
@@ -402,7 +318,7 @@ impl JsonValue {
 
     pub fn as_array(self) -> Result<JsonArray> {
         match self {
-            JsonValue::None => Err(Error::new(ErrorKind::ValueNull, "value is null")),
+            JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Array(array) => Ok(array),
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need json array")),
         }
@@ -493,24 +409,136 @@ impl JsonValue {
     }
 
     pub fn opt_array(self) -> Option<JsonArray> {
-       self.as_array().ok()
+        self.as_array().ok()
     }
 }
 
-/// Convert special character to escape sequence.
-pub fn replace_escape(str: &str) -> String {
-    let mut result = String::new();
-    str.chars().for_each(|ch| {
-        match ch {
-            '\\' => result.push_str("\\\\"),
-            '\"' => result.push_str("\\\""),
-            '\x0C' => result.push_str("\\f"),
-            '\t' => result.push_str("\\t"),
-            '\n' => result.push_str("\\n"),
-            '\x08' => result.push_str("\\b"),
-            '\r' => result.push_str("\\r"),
-            ch => result.push(ch),
-        };
-    });
-    result
+impl From<bool> for JsonValue {
+    fn from(v: bool) -> Self {
+        JsonValue::Bool(v)
+    }
+}
+
+impl From<&str> for JsonValue {
+    fn from(v: &str) -> Self {
+        if v.eq_ignore_ascii_case("null") {
+            JsonValue::Null
+        } else {
+            JsonValue::String(v.to_string())
+        }
+    }
+}
+
+impl From<String> for JsonValue {
+    fn from(v: String) -> Self {
+        if v.eq_ignore_ascii_case("null") {
+            JsonValue::Null
+        } else {
+            JsonValue::String(v)
+        }
+    }
+}
+
+impl From<i8> for JsonValue {
+    fn from(value: i8) -> Self {
+        if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value.into())
+        }
+    }
+}
+
+impl From<i16> for JsonValue {
+    fn from(value: i16) -> Self {
+        if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value.into())
+        }
+    }
+}
+
+impl From<i32> for JsonValue {
+    fn from(value: i32) -> Self {
+        if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value.into())
+        }
+    }
+}
+
+impl From<i64> for JsonValue {
+    fn from(value: i64) -> Self {
+        if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value.into())
+        }
+    }
+}
+
+impl From<i128> for JsonValue {
+    fn from(value: i128) -> Self {
+        if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value)
+        }
+    }
+}
+
+impl From<u8> for JsonValue {
+    fn from(value: u8) -> Self {
+       JsonValue::Uint(value.into())
+    }
+}
+
+impl From<u16> for JsonValue {
+    fn from(value: u16) -> Self {
+        JsonValue::Uint(value.into())
+    }
+}
+
+impl From<u32> for JsonValue {
+    fn from(value: u32) -> Self {
+        JsonValue::Uint(value.into())
+    }
+}
+
+impl From<u64> for JsonValue {
+    fn from(value: u64) -> Self {
+       JsonValue::Uint(value.into())
+    }
+}
+
+impl From<u128> for JsonValue {
+    fn from(value: u128) -> Self {
+       JsonValue::Uint(value)
+    }
+}
+
+impl From<f32> for JsonValue {
+    fn from(value: f32) -> Self {
+       JsonValue::Float(value.into())
+    }
+}
+
+impl From<f64> for JsonValue {
+    fn from(value: f64) -> Self {
+       JsonValue::Float(value)
+    }
+}
+
+impl From<JsonObject> for JsonValue {
+    fn from(value: JsonObject) -> Self {
+        JsonValue::Object(value)
+    }
+}
+
+impl From<JsonArray> for JsonValue {
+    fn from(value: JsonArray) -> Self {
+        JsonValue::Array(value)
+    }
 }
