@@ -57,6 +57,18 @@ impl JsonObject {
         self.len() == 0
     }
 
+    pub fn is_null<Q: ?Sized>(&self, key: &Q) -> bool
+    where
+        String: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        if let Some(JsonValue::Null) = self.get(key) {
+            true
+        } else {
+            false
+        }
+    }
+
     /// Maps `key` to `value`, clobbering any existing
     /// key/value mapping with the same name.
     pub fn insert<K: Into<String>, V: Into<JsonValue>>(&mut self, key: K, value: V) {
