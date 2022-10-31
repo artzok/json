@@ -85,17 +85,19 @@ impl ToJson for JsonValue {
 }
 
 /// Convert special character to escape sequence.
-fn replace_escape(str: &str) -> String {
-    str.chars()
-        .map(|ch| match ch {
-            '\\' => "\\\\".to_string(),
-            '\"' => "\\\"".to_string(),
-            '\x0C' => "\\f".to_string(),
-            '\t' => "\\t".to_string(),
-            '\n' => "\\n".to_string(),
-            '\x08' => "\\b".to_string(),
-            '\r' => "\\r".to_string(),
-            ch => ch.to_string(),
-        })
-        .collect()
+pub fn replace_escape(str: &str) -> String {
+    let mut result = String::new();
+    str.chars().for_each(|ch| {
+         match ch {
+            '\\' => result.push_str("\\\\"),
+            '\"' => result.push_str("\\\""),
+            '\x0C' => result.push_str("\\f"),
+            '\t' => result.push_str("\\t"),
+            '\n' => result.push_str("\\n"),
+            '\x08' => result.push_str("\\b"),
+            '\r' => result.push_str("\\r"),
+            ch => result.push(ch),
+         };
+    });
+    result
 }

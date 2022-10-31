@@ -1,6 +1,6 @@
 use std::{borrow::Borrow, collections::HashMap, fmt::Display, hash::Hash, iter};
 
-use crate::{Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson};
+use crate::{Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson, json_value};
 
 ///
 /// [`JsonValue::Object`] 内部数据存储类型
@@ -255,7 +255,7 @@ impl JsonBuilder for JsonObject {
             }
 
             // push sep
-            json.push_str(&format!("\"{}\":", key));
+            json.push_str(&format!("\"{}\":", json_value::replace_escape(key)));
 
             if pretty {
                 json.push(' ');
