@@ -255,7 +255,9 @@ impl JsonBuilder for JsonObject {
             }
 
             // push sep
-            json.push_str(&format!("\"{}\":", json_value::replace_escape(key)));
+            json.push('\"');
+            json.push_str(&json_value::replace_escape(key));
+            json.push_str("\":");
 
             if pretty {
                 json.push(' ');

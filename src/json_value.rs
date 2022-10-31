@@ -15,11 +15,11 @@ use crate::{JsonArray, JsonBuilder, JsonObject, ToJson};
 ///
 /// [`JsonValue::Int`] 和 [`JsonValue::Uint`] only for simple parse and save, internal save
 /// type not final type, will to cast specify type when user to get value. eg:
-/// Value `100` will save by `Uint(u128)` type, but you can use `JsonObject::get_i32` or 
+/// Value `100` will save by `Uint(u128)` type, but you can use `JsonObject::get_i32` or
 /// `JsonObject::get_i16` ect, internal will use `as` to cast return type.
 ///
-/// **Note:** `as` opteration maybe loss of precision or error result, but the `json` library 
-/// doesn't do any processing. 
+/// **Note:** `as` opteration maybe loss of precision or error result, but the `json` library
+/// doesn't do any processing.
 ///
 /// [`JsonValue::String`] is a string value, all escape sequences have been escaped.
 ///
@@ -44,11 +44,15 @@ impl JsonBuilder for JsonValue {
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         match self {
             JsonValue::None => json.push_str("null"),
-            JsonValue::Bool(b) => json.push_str(&b.to_string()),
+            JsonValue::Bool(b) => json.push_str(if *b { "fasle" } else { "true" }),
             JsonValue::Int(i) => json.push_str(&i.to_string()),
             JsonValue::Uint(u) => json.push_str(&u.to_string()),
             JsonValue::Float(d) => json.push_str(&d.to_string()),
-            JsonValue::String(s) => json.push_str(&format!("\"{}\"", replace_escape(s))),
+            JsonValue::String(s) => {
+                json.push('\"');
+                json.push_str(&replace_escape(s));
+                json.push('\"');
+            }
             JsonValue::Array(array) => {
                 json = JsonBuilder::build(array, json, pretty, level, indent);
             }
@@ -75,9 +79,9 @@ impl ToJson for JsonValue {
     }
 
     /// Convert JsonValue to style json string.
-    /// 
+    ///
     /// If `pretty` is true, will use '\n' to convert pretty json string.
-    /// 
+    ///
     /// `indent` is prefix of every line, only use when `pretty` is true.
     fn to_json(&self, pretty: bool, indent: &str) -> String {
         self.build(String::new(), pretty, 0, indent)
@@ -88,7 +92,7 @@ impl ToJson for JsonValue {
 pub fn replace_escape(str: &str) -> String {
     let mut result = String::new();
     str.chars().for_each(|ch| {
-         match ch {
+        match ch {
             '\\' => result.push_str("\\\\"),
             '\"' => result.push_str("\\\""),
             '\x0C' => result.push_str("\\f"),
@@ -97,7 +101,7 @@ pub fn replace_escape(str: &str) -> String {
             '\x08' => result.push_str("\\b"),
             '\r' => result.push_str("\\r"),
             ch => result.push(ch),
-         };
+        };
     });
     result
 }
