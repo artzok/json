@@ -29,6 +29,8 @@ pub struct Error {
 /// [`CastError`] Except type and save type not match or parse escape character error.
 ///
 /// [`NotFound`] Not found value of key.
+/// 
+/// [`TypeNotMatch`] Type mismatch.
 ///
 #[derive(Debug)]
 pub enum ErrorKind {
@@ -37,6 +39,7 @@ pub enum ErrorKind {
     NumberParseError,
     CastError,
     NotFound,
+    TypeNotMatch,
 }
 
 impl Error {

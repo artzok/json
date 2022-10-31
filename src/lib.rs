@@ -13,10 +13,10 @@ pub use json_array::JsonArray;
 pub use json_object::JsonObject;
 pub use json_value::JsonValue;
 
-/// Global parse method for convenient.
+/// Global convenience parsing method.
 ///
-/// Return `Ok(JsonValue)` if success.
-/// Return `Err(Error)` if parse failed.
+/// Return [`Ok(JsonValue)`] on success.
+/// Parse failure returns [`Err(Error)`].
 ///
 /// # Examples
 ///
@@ -34,8 +34,7 @@ pub fn parse(str: &str) -> Result<JsonValue> {
 
 /// A specialized [`Result`] type for JSON operations.
 ///
-/// This type is broadly used across `json` package for any operation which may
-/// produce an error.
+/// This type is used `json` package for any operation which may produce an error.
 ///
 /// This typedef is generally used to avoid writing out [`Error`] directly and
 /// is otherwise a direct mapping to [`Result`].
@@ -46,14 +45,14 @@ pub fn parse(str: &str) -> Result<JsonValue> {
 /// ```
 pub type Result<T> = result::Result<T, Error>;
 
-/// Use to build JSON string from [`JsonValue`], for internal use only.
+/// Used to build JSON strings from [`JsonValue`], for internal use only.
 trait JsonBuilder {
     fn build(&self, json: String, pretty: bool, level: usize, indent: &str) -> String;
 }
 
-/// Public trait for convert [`JsonValue`] to JSON string.
+/// Public trait for converting [`JsonValue`] to JSON string.
 ///
-/// All json element must implement this trait. Includes:
+/// All json elements already implement this trait. Including:
 ///
 /// 1. [`JsonValue`]
 /// 2. [`JsonObject`]
@@ -67,6 +66,7 @@ trait JsonBuilder {
 /// let str = "{\"key\" : \"value\", \"array\": [1, \"rust\", false, 12.5]}";
 /// let json = json::parse(str).unwrap();
 /// println!("{}", json.pretty());
+/// println!("{}", json.to_json(true, " "));
 /// ```
 ///
 pub trait ToJson {

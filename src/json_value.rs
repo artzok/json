@@ -27,7 +27,7 @@ use crate::{JsonArray, JsonBuilder, JsonObject, ToJson};
 ///
 /// [`JsonValue::Array`] is nest JSON array, internal use [`JsonArray`] save values.
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum JsonValue {
     None,
     Bool(bool),

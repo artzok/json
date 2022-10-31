@@ -7,7 +7,7 @@ use crate::{JsonBuilder, JsonValue, ToJson};
 ///
 /// 其内部以 [`Vec<JsonValue>`] 形式存储数组
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct JsonArray {
     list: Vec<JsonValue>,
 }

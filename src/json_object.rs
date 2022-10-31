@@ -1,26 +1,204 @@
-use std::{borrow::Borrow, collections::HashMap, fmt::Display, hash::Hash, iter};
+use std::{borrow::Borrow, collections::HashMap, fmt::Display, hash::Hash, iter, array};
 
-use crate::{Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson, json_value};
+use crate::{
+    json_value, tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson, JsonArray,
+};
 
+/// A modifiable set of name/value mappings. Names are unique, non-null strings.
+///  Values may be any mix of [`JsonValue`].
 ///
-/// [`JsonValue::Object`] 内部数据存储类型
+/// **This class can coerce values to another type when requested.**
 ///
-/// 其内部使用 [`HashMap<String, JsonValue>`] 形式存储键值对
+/// 1. When the requested type is a [`bool`], strings will be coerced
+/// using a case-insensitive comparison to "true" and "false".
 ///
-#[derive(Debug)]
+/// 2. When the requested type is a integer, [`i128`] or [`u128`] will be coerced return type.
+///
+/// 3. When the requested type is an float, [`i128`] or [`u128`] or [`f64`] will be coerced return type.
+#[derive(Debug, Clone)]
 pub struct JsonObject {
     map: HashMap<String, JsonValue>,
 }
 
 impl JsonObject {
+    /// Create an empty [`JsonObject`].
     pub fn new() -> JsonObject {
         JsonObject {
             map: HashMap::new(),
         }
     }
 
+    /// Parse `json` to [`JsonObject`].
+    ///
+    /// Return [`ErrorKind::TypeNotMatch`] if the parsed result
+    /// is not a [`JsonValue::Object`].
+    pub fn create(json: &str) -> Result<JsonObject> {
+        let json_value = JsonTokener::new(json).next_value()?;
+        if let JsonValue::Object(jo) = json_value {
+            Ok(jo)
+        } else {
+            Err(Error::new(
+                ErrorKind::TypeNotMatch,
+                "Need JsonValue::Object but not.",
+            ))
+        }
+    }
+
+    /// Returns the number of key/value mappings in this object.
+    pub fn len(&self) -> usize {
+        return self.map.len();
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
     pub fn insert(&mut self, key: String, value: JsonValue) {
         self.map.insert(key, value);
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_bool(&mut self, key: String, value: bool) {
+        self.map.insert(key, JsonValue::Bool(value));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_i8(&mut self, key: String, value: i8) {
+        let value = if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value as i128)
+        };
+        self.insert(key, value);
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_i16(&mut self, key: String, value: i16) {
+        let value = if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value as i128)
+        };
+        self.insert(key, value);
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_i32(&mut self, key: String, value: i32) {
+        let value = if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value as i128)
+        };
+        self.insert(key, value);
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_i64(&mut self, key: String, value: i64) {
+        let value = if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value as i128)
+        };
+        self.insert(key, value);
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_i128(&mut self, key: String, value: i128) {
+        let value = if value > 0 {
+            JsonValue::Uint(value as u128)
+        } else {
+            JsonValue::Int(value)
+        };
+        self.insert(key, value);
+    }
+
+ /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_u8(&mut self, key: String, value: u8) {
+        self.insert(key, JsonValue::Uint(value as u128));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_u16(&mut self, key: String, value: u16) {
+        self.insert(key, JsonValue::Uint(value as u128));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_u32(&mut self, key: String, value: u32) {
+        self.insert(key, JsonValue::Uint(value as u128));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_u64(&mut self, key: String, value: u64) {
+        self.insert(key, JsonValue::Uint(value as u128));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_u128(&mut self, key: String, value: u128) {
+        self.insert(key, JsonValue::Uint(value));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_f32(&mut self, key: String, value: f32) {
+        self.insert(key, JsonValue::Float(value as f64));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_f64(&mut self, key: String, value: f64) {
+        self.insert(key, JsonValue::Float(value));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_string(&mut self, key: String, value: String) {
+        self.insert(key, JsonValue::String(value));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_object(&mut self, key: String, object: JsonObject) {
+        self.insert(key, JsonValue::Object(object));
+    }
+
+    /// Maps `key` to `value`, clobbering any existing
+    /// key/value mapping with the same name.
+    pub fn insert_array(&mut self, key: String, value: JsonArray) {
+        self.insert(key, JsonValue::Array(value));
+    }
+
+    /// Appends `value` to the array already mapped to `name`. If
+    /// this object has no mapping for `name`, this inserts
+    ///  a new mapping.
+    pub fn accumulate(&mut self, key: String, value: JsonValue) {
+        match self.remove(&key) {
+            None => {
+                self.insert(key, value)
+            },
+            Some(mut current) => {
+                match current {
+                     JsonValue::Array(ref mut array) => {
+                         array.push(value);
+                        self.insert(key, current);
+                    },
+                    _ => {
+                        let mut array = JsonArray::new();
+                        array.push(current);
+                        array.push(value);
+                        self.insert(key, JsonValue::Array(array));
+                    }
+                }
+            }
+        }
     }
 
     ///
@@ -238,6 +416,23 @@ impl JsonObject {
     {
         self.map.get(key)
     }
+
+    fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<&mut JsonValue>
+    where
+        String: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.map.get_mut(key)
+    }
+
+    fn remove<Q: ?Sized>(&mut self, key: &Q) -> Option<JsonValue> 
+    where
+        String: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.map.remove(key)
+    }
+
 }
 
 impl JsonBuilder for JsonObject {
