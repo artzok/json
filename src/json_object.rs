@@ -1,4 +1,6 @@
-use std::{borrow::Borrow, collections::HashMap, fmt::Display, hash::Hash, iter};
+use std::{borrow::Borrow, fmt::Display, hash::Hash, iter};
+
+use linked_hash_map::LinkedHashMap;
 
 use crate::{
     tokener::JsonTokener, utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonValue, Result,
@@ -18,14 +20,14 @@ use crate::{
 /// 3. When the requested type is an float, [`i128`] or [`u128`] or [`f64`] will be coerced return type.
 #[derive(Debug, Clone)]
 pub struct JsonObject {
-    map: HashMap<String, JsonValue>,
+    map: LinkedHashMap<String, JsonValue>,
 }
 
 impl JsonObject {
     /// Create an empty [`JsonObject`].
     pub fn new() -> JsonObject {
         JsonObject {
-            map: HashMap::new(),
+            map: LinkedHashMap::new(),
         }
     }
 

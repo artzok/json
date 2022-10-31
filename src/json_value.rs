@@ -44,7 +44,7 @@ impl JsonBuilder for JsonValue {
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         match self {
             JsonValue::Null => json.push_str("null"),
-            JsonValue::Bool(b) => json.push_str(if *b { "fasle" } else { "true" }),
+            JsonValue::Bool(b) => json.push_str(if *b { "false" } else { "true" }),
             JsonValue::Int(i) => json.push_str(&i.to_string()),
             JsonValue::Uint(u) => json.push_str(&u.to_string()),
             JsonValue::Float(d) => json.push_str(&d.to_string()),
@@ -93,6 +93,18 @@ impl JsonValue {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
             JsonValue::Bool(value) => Ok(*value),
+            JsonValue::String(value) => {
+                if value.eq_ignore_ascii_case("true") {
+                    Ok(true)
+                } else if value.eq_ignore_ascii_case("false") {
+                    Ok(false)
+                } else {
+                    Err(Error::new(
+                        ErrorKind::TypeNotMatch,
+                        "need bool but get string",
+                    ))
+                }
+            }
             _ => Err(Error::new(ErrorKind::TypeNotMatch, "need bool")),
         }
     }
@@ -421,21 +433,13 @@ impl From<bool> for JsonValue {
 
 impl From<&str> for JsonValue {
     fn from(v: &str) -> Self {
-        if v.eq_ignore_ascii_case("null") {
-            JsonValue::Null
-        } else {
-            JsonValue::String(v.to_string())
-        }
+        JsonValue::String(v.to_string())
     }
 }
 
 impl From<String> for JsonValue {
     fn from(v: String) -> Self {
-        if v.eq_ignore_ascii_case("null") {
-            JsonValue::Null
-        } else {
-            JsonValue::String(v)
-        }
+        JsonValue::String(v)
     }
 }
 
@@ -491,7 +495,7 @@ impl From<i128> for JsonValue {
 
 impl From<u8> for JsonValue {
     fn from(value: u8) -> Self {
-       JsonValue::Uint(value.into())
+        JsonValue::Uint(value.into())
     }
 }
 
@@ -509,25 +513,25 @@ impl From<u32> for JsonValue {
 
 impl From<u64> for JsonValue {
     fn from(value: u64) -> Self {
-       JsonValue::Uint(value.into())
+        JsonValue::Uint(value.into())
     }
 }
 
 impl From<u128> for JsonValue {
     fn from(value: u128) -> Self {
-       JsonValue::Uint(value)
+        JsonValue::Uint(value)
     }
 }
 
 impl From<f32> for JsonValue {
     fn from(value: f32) -> Self {
-       JsonValue::Float(value.into())
+        JsonValue::Float(value.into())
     }
 }
 
 impl From<f64> for JsonValue {
     fn from(value: f64) -> Self {
-       JsonValue::Float(value)
+        JsonValue::Float(value)
     }
 }
 
