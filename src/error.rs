@@ -40,6 +40,7 @@ pub enum ErrorKind {
     CastError,
     NotFound,
     TypeNotMatch,
+    ValueNull,
 }
 
 impl Error {
