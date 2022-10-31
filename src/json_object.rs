@@ -1,7 +1,8 @@
 use std::{borrow::Borrow, collections::HashMap, fmt::Display, hash::Hash, iter};
 
 use crate::{
-    json_value, tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson, JsonArray, utils,
+    tokener::JsonTokener, utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonValue, Result,
+    ToJson,
 };
 
 /// A modifiable set of name/value mappings. Names are unique, non-null strings.
@@ -46,13 +47,18 @@ impl JsonObject {
 
     /// Returns the number of key/value mappings in this object.
     pub fn len(&self) -> usize {
-        return self.map.len();
+        self.map.len()
+    }
+
+    /// Check empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// Maps `key` to `value`, clobbering any existing
     /// key/value mapping with the same name.
-    pub fn insert<T: Into<JsonValue>>(&mut self, key: String, value: T) {
-        self.map.insert(key, value.into());
+    pub fn insert<K: Into<String>, V: Into<JsonValue>>(&mut self, key: K, value: V) {
+        self.map.insert(key.into(), value.into());
     }
 
     /// Get value borrow of `key`.
@@ -111,7 +117,7 @@ impl JsonBuilder for JsonObject {
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         json.push('{');
 
-        let last = self.map.len() - 1;
+        let last = if self.is_empty() { 0 } else { self.len() - 1 };
         let indents: String = iter::repeat(indent).take(level + 1).collect();
 
         for (index, (key, value)) in self.map.iter().enumerate() {

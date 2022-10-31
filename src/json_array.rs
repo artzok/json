@@ -49,14 +49,14 @@ impl JsonArray {
     }
 
     /// Get value borrow of position `index`.
-    /// 
+    ///
     /// Return [`None`] if `index` out of bounds.
     pub fn get(&self, index: usize) -> Option<&JsonValue> {
         self.list.get(index)
     }
 
     /// Get value mut borrow of position `index`.
-    /// 
+    ///
     /// Return [`None`] if `index` out of bounds.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut JsonValue> {
         self.list.get_mut(index)
@@ -72,7 +72,7 @@ impl JsonArray {
     }
 
     /// Remove and return value of position `index`.
-    /// 
+    ///
     /// Return [`None`] if `index` out of bounds.
     pub fn remove(&mut self, index: usize) -> Option<JsonValue> {
         if index < self.len() {
@@ -86,13 +86,17 @@ impl JsonArray {
     pub fn len(&self) -> usize {
         self.list.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 impl JsonBuilder for JsonArray {
     fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
         json.push('[');
 
-        let last = self.list.len() - 1;
+        let last = if self.is_empty() { 0 } else { self.len() - 1 };
         let indents: String = iter::repeat(indent).take(level + 1_usize).collect();
 
         for (index, item) in self.list.iter().enumerate() {
