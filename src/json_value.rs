@@ -32,9 +32,9 @@ pub enum JsonValue {
     Float(f64),
     /// Is a string value, all escape sequences have been escaped.
     String(String),
-    /// Is nest JSON ojbect, internal use [`JsonObject`] save values.
+    /// Is nest JSON ojbect, use [`JsonObject`] save values.
     Object(JsonObject),
-    /// Is nest JSON array, internal use [`JsonArray`] save values.
+    /// Is nest JSON array, use [`JsonArray`] save values.
     Array(JsonArray),
 }
 
@@ -285,7 +285,7 @@ impl JsonValue {
         }
     }
 
-    /// Convert to [`&mut str`] value.
+    /// Convert to `&mut str` value.
     pub fn as_mut_str(&mut self) -> Result<&mut str> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -303,7 +303,7 @@ impl JsonValue {
         }
     }
 
-    /// Convert to [`&JsonObject`] value.
+    /// Convert to `&JsonObject` value.
     pub fn as_object_ref(&self) -> Result<&JsonObject> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -312,7 +312,7 @@ impl JsonValue {
         }
     }
 
-    /// Convert to [`&mut JsonObject`] value.
+    /// Convert to `&mut JsonObject` value.
     pub fn as_object_mut_ref(&mut self) -> Result<&mut JsonObject> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -330,7 +330,7 @@ impl JsonValue {
         }
     }
 
-    /// Convert to [`&JsonArray`] value.
+    /// Convert to `&JsonArray` value.
     pub fn as_array_ref(&self) -> Result<&JsonArray> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -339,7 +339,7 @@ impl JsonValue {
         }
     }
 
-    /// Convert to [`&mut JsonArray`] value.
+    /// Convert to `&mut JsonArray` value.
     pub fn as_array_mut_ref(&mut self) -> Result<&mut JsonArray> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
