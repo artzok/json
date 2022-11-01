@@ -2,8 +2,8 @@ use std::{fmt::Display, iter};
 
 use crate::{tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson};
 
- /// A dense indexed sequence of values. Values may be any element of [`JsonValue`].
- #[derive(Debug, Clone)]
+/// A dense indexed sequence of values. Values may be any element of [`JsonValue`].
+#[derive(Debug, Clone)]
 pub struct JsonArray {
     list: Vec<JsonValue>,
 }

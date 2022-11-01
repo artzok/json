@@ -40,7 +40,6 @@ fn serialization_to_json_str() {
     println!("{}", json_object.pretty());
 }
 
-
 #[test]
 fn parse_to_object() {
     let str = r#"{"key": "value"}"#;

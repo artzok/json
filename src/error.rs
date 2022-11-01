@@ -28,9 +28,9 @@ pub struct Error {
 /// [`CastError`] Type conversion error.
 ///
 /// [`NotFound`] No value found for key.
-/// 
+///
 /// [`TypeNotMatch`] Type mismatch.
-/// 
+///
 /// [`ValueNull`] The value of key is null.
 ///
 #[derive(Debug, Clone, Copy)]

@@ -612,12 +612,10 @@ mod test {
         assert!(array.is_ok());
         assert_eq!(array.unwrap().len(), 5);
 
-
         let str = "[1: 2: 3]";
         let array = JsonTokener::new(str).next_value();
         assert!(array.is_err());
     }
-
 
     #[test]
     fn tokener_string() {
@@ -626,12 +624,15 @@ mod test {
         assert!(str.is_err());
 
         let str = "\"\\n\\b\\f\\t\\r\\'\\\"\\\\\\/\\uD83D\\uDE01\"";
-        let str = JsonTokener::new(str).next_value().unwrap().as_string().unwrap();
+        let str = JsonTokener::new(str)
+            .next_value()
+            .unwrap()
+            .as_string()
+            .unwrap();
         assert_eq!(str, "\n\x08\x0c\t\r\'\"\\/😁");
 
         let str = "\"hello";
         let str = JsonTokener::new(str).next_value();
         assert!(str.is_err());
     }
-
 }
