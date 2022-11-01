@@ -1,5 +1,4 @@
 use crate::{Error, ErrorKind, JsonArray, JsonObject, JsonValue, Result};
-use core::slice;
 
 pub struct JsonTokener {
     chars: Vec<char>,
@@ -46,7 +45,7 @@ impl JsonTokener {
     fn back(&mut self) {
         self.pos -= 1;
     }
-    
+
     // `pos` to next one.
     fn advance(&mut self, offset: usize) {
         self.pos += offset;
@@ -56,7 +55,6 @@ impl JsonTokener {
     fn sub_str(&self, start: usize, end: usize) -> String {
         self.chars[start..end].iter().collect()
     }
-
 
     /// parse next JSON element.
     pub fn next_value(&mut self) -> Result<JsonValue> {
@@ -259,7 +257,7 @@ impl JsonTokener {
             if ch == '\r' || ch == '\n' {
                 return Err(Error::new(
                     ErrorKind::SyntaxError,
-                    "string can't contain \r or \n",
+                    "string can't contain \\r or \\n",
                 ));
             }
 
@@ -451,7 +449,7 @@ where
             let mut pos = 1;
 
             if finds[1..].iter().all(|c| {
-                let o = list.get(index + pos);
+                let o = list.get(from + index + pos);
                 pos += 1;
                 o.is_some() && o.unwrap() == c
             }) {
@@ -471,18 +469,6 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_index_of() {
-        let list = vec![1, 2, 3, 4];
-        assert_eq!(index_of(&list, &1, 0), Some(0));
-        assert_eq!(index_of(&list, &1, 2), None);
-        assert_eq!(index_of(&list, &2, 0), Some(1));
-        assert_eq!(index_of(&list, &2, 4), None);
-        assert_eq!(index_of(&list, &4, 4), None);
-        assert_eq!(index_of(&list, &4, 2), Some(3));
-        assert_eq!(index_of(&list, &10, 0), None);
-    }
-
-    #[test]
     fn test_index_any() {
         let list = vec!['a', '\r', '\n', 'f'];
         assert_eq!(index_of_any(&list, &['\r', '\n'], 0), Some(1));
@@ -495,8 +481,157 @@ mod test {
         assert_eq!(index_of_all(&list, &[1, 2], 0), Some(0));
         assert_eq!(index_of_all(&list, &[1, 2], 2), None);
         assert_eq!(index_of_all(&list, &[2, 3], 0), Some(1));
+        assert_eq!(index_of_all(&list, &[2, 3], 1), Some(1));
         assert_eq!(index_of_all(&list, &[2, 3], 4), None);
         assert_eq!(index_of_all(&list, &[4, 10], 4), None);
         assert_eq!(index_of_all(&list, &[10, 11], 0), None);
     }
+
+    #[test]
+    fn tokener_bom() {
+        let str = "\u{feff}\"string\"";
+        let json = JsonTokener::new(str).next_value();
+        assert!(json.is_ok());
+        let json = json.unwrap();
+        assert_eq!(json.as_str().unwrap(), "string");
+    }
+
+    #[test]
+    #[should_panic(expected = "can't found comment end of C style(*/)")]
+    fn tokener_comemnt_error() {
+        let str = "/*";
+        JsonTokener::new(str).next_value().unwrap();
+    }
+
+    #[test]
+    fn tokener_comment_ok() {
+        let str = "//hello\n\"string\"";
+        let json = JsonTokener::new(str).next_value().unwrap();
+        assert_eq!(json.as_string().unwrap(), "string");
+
+        let str = "#hello\n\"string\"";
+        let json = JsonTokener::new(str).next_value().unwrap();
+        assert_eq!(json.as_string().unwrap(), "string");
+
+        let str = "/*hello*/\n\"string\"";
+        let json = JsonTokener::new(str).next_value().unwrap();
+        assert_eq!(json.as_string().unwrap(), "string");
+    }
+
+    #[test]
+    #[should_panic(expected = "read a literal but get empty")]
+    fn tokener_comment_error() {
+        let str = "/";
+        JsonTokener::new(str).next_value().unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "need next char but return EOF")]
+    fn tokener_comment_error2() {
+        let str = "//";
+        JsonTokener::new(str).next_value().unwrap();
+    }
+
+    #[test]
+    fn tokener_separator() {
+        let str = "{\"key\":1}";
+        assert!(JsonTokener::new(str)
+            .next_value()
+            .unwrap()
+            .as_object()
+            .is_ok());
+
+        let str = "{\"key\":>1}";
+        assert!(JsonTokener::new(str)
+            .next_value()
+            .unwrap()
+            .as_object()
+            .is_ok());
+
+        let str = "{\"key\"=1}";
+        assert!(JsonTokener::new(str)
+            .next_value()
+            .unwrap()
+            .as_object()
+            .is_ok());
+
+        let str = "{\"key\"=>1}";
+        assert!(JsonTokener::new(str)
+            .next_value()
+            .unwrap()
+            .as_object()
+            .is_ok());
+
+        let str = "{\"key\":=1}";
+        assert!(JsonTokener::new(str).next_value().is_err());
+
+        let str = "{\"key\":1, \"num\": 10; \"count\": 10}";
+        assert!(JsonTokener::new(str)
+            .next_value()
+            .unwrap()
+            .as_object()
+            .is_ok());
+    }
+
+    #[test]
+    fn tokener_empty_object() {
+        let str = "{}";
+        assert!(JsonTokener::new(str)
+            .next_value()
+            .unwrap()
+            .as_object()
+            .is_ok())
+    }
+
+    #[test]
+    #[should_panic = "must has a key for non-empty object"]
+    fn tokener_json_object_error() {
+        let str = "{123}";
+        JsonTokener::new(str).next_value().unwrap();
+    }
+
+    #[test]
+    fn tokener_json_array() {
+        let str = "[]";
+        let array = JsonTokener::new(str).next_value().unwrap().as_array();
+        assert!(array.is_ok());
+        assert!(array.unwrap().is_empty());
+
+        let str = "[1, 2, 3]";
+        let array = JsonTokener::new(str).next_value().unwrap().as_array();
+        assert!(array.is_ok());
+        assert_eq!(array.unwrap().len(), 3);
+
+        let str = "[1; 2; 3]";
+        let array = JsonTokener::new(str).next_value().unwrap().as_array();
+        assert!(array.is_ok());
+        assert_eq!(array.unwrap().len(), 3);
+
+        let str = "[, 1; 2; 3, ]";
+        let array = JsonTokener::new(str).next_value().unwrap().as_array();
+        assert!(array.is_ok());
+        assert_eq!(array.unwrap().len(), 5);
+
+
+        let str = "[1: 2: 3]";
+        let array = JsonTokener::new(str).next_value();
+        assert!(array.is_err());
+    }
+
+
+    #[test]
+    fn tokener_string() {
+        let str = "\"\n\"";
+        let str = JsonTokener::new(str).next_value();
+        assert!(str.is_err());
+
+        let str = "\"\\n\\b\\f\\t\\r\\'\\\"\\\\\\/\\uD83D\\uDE01\"";
+        let str = JsonTokener::new(str).next_value().unwrap().as_string().unwrap();
+        assert_eq!(str, "\n\x08\x0c\t\r\'\"\\/😁");
+
+        let str = "\"hello";
+        let str = JsonTokener::new(str).next_value();
+        assert!(str.is_err());
+    }
+
 }

@@ -1,12 +1,14 @@
-use json::{JsonObject, JsonValue, JsonArray};
+use json::{JsonArray, JsonObject, JsonValue, ToJson};
 
-fn main() {
-    // let json = std::fs::read_to_string("./test.json").unwrap();
-    // let json = JsonObject::create(&json).unwrap();
-    //  println!("the file json:\n{}", json.pretty());
-    // let json = json.get("data").unwrap().opt_object_ref().unwrap().pretty();
-    // println!("{}", json);
+#[test]
+fn parse_large_json() {
+    let json = std::fs::read_to_string("./test.json").unwrap();
+    let json = JsonObject::create(&json);
+    assert!(json.is_ok());
+}
 
+#[test]
+fn serialization_to_json_str() {
     let mut json_object = JsonObject::new();
     json_object.insert("null", JsonValue::Null);
     json_object.insert("true", true);
@@ -35,5 +37,5 @@ fn main() {
     array.push(JsonObject::new());
     array.push(JsonArray::new());
     json_object.insert("array", array);
-    println!("{}", json_object.to_string());
+    println!("{}", json_object.pretty());
 }
