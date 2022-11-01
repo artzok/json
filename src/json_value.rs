@@ -5,18 +5,18 @@ use crate::{utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonObject, Result,
 ///
 /// All JSON element type.
 ///
-/// **This class can coerce values to another type when requested.** 
-/// 
+/// **This class can coerce values to another type when requested.**
+///
 /// 1. When the requested type is a [`bool`], strings will be coerced
 /// using a case-insensitive comparison to "true" and "false".
 ///
-/// 2. When the requested type is a integer, [`i128`] or [`u128`] will 
+/// 2. When the requested type is a integer, [`i128`] or [`u128`] will
 /// be coerced return type.
 ///
-/// 3. When the requested type is an float, [`i128`] or [`u128`] or [`f64`] 
+/// 3. When the requested type is an float, [`i128`] or [`u128`] or [`f64`]
 /// will be coerced return type.
 ///
-/// **Note:** `as` opteration maybe loss of precision or error result, but 
+/// **Note:** `as` opteration maybe loss of precision or error result, but
 /// the `json` library doesn't do any processing.
 #[derive(Debug, Clone)]
 pub enum JsonValue {
@@ -88,6 +88,71 @@ impl ToJson for JsonValue {
 }
 
 impl JsonValue {
+    /// Check is [JsonValue::Null].
+    pub fn is_null(&self) -> bool {
+        if let JsonValue::Null = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Check is [JsonValue::Bool].
+    pub fn is_bool(&self) -> bool {
+        if let JsonValue::Bool(_) = self {
+            true
+        } else {
+            true
+        }
+    }
+
+    /// Check is [JsonValue::Uint] or [JsonValue::Int].
+    pub fn is_integer(&self) -> bool {
+        if let JsonValue::Int(_) = self {
+            true
+        } else if let JsonValue::Uint(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Check is [JsonValue::Float].
+    pub fn is_float(&self) -> bool {
+        if let JsonValue::Float(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Check is [JsonValue::String].
+    pub fn is_string(&self) -> bool {
+        if let JsonValue::String(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Check is [JsonValue::Object].
+    pub fn is_object(&self) -> bool {
+        if let JsonValue::Object(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Check is [JsonValue::Object].
+    pub fn is_array(&self) -> bool {
+        if let JsonValue::Array(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
     /// Convert to [`bool`] value.
     pub fn as_bool(&self) -> Result<bool> {
         match self {

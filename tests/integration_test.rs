@@ -39,3 +39,27 @@ fn serialization_to_json_str() {
     json_object.insert("array", array);
     println!("{}", json_object.pretty());
 }
+
+
+#[test]
+fn parse_to_object() {
+    let str = r#"{"key": "value"}"#;
+    let json = JsonObject::create(str);
+    assert!(json.is_ok());
+
+    let json = json.unwrap();
+    let value = json.get("key").unwrap().as_str().unwrap();
+    assert_eq!(value, "value");
+}
+
+#[test]
+fn parse_to_array() {
+    let str = r#"[1, 2, 3, 4,,]"#;
+    let array = JsonArray::create(str);
+    assert!(array.is_ok());
+
+    let array = array.unwrap();
+    assert_eq!(array.get(0).unwrap().as_i32().unwrap(), 1);
+
+    assert!(array.get(4).unwrap().is_null());
+}
