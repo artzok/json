@@ -4,37 +4,36 @@ use std::{
 };
 
 ///
-/// Json parse or operations fail info.
+/// Json parse or operations all possible error messages.
 ///
-/// `kind` indication error kind.
+/// `kind` is [`ErrorKind`], indicates the type of error.
 ///
-/// `msg` has more specific description.
+/// `msg` has a more detailed description.
 ///
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Error {
     pub kind: ErrorKind,
     pub msg: &'static str,
 }
 
-/// All kind of json parse or operations error.
+/// All type of [`Error`].
 ///
-/// [`ErrorKind::EOF`] An error returned when an operation could not be completed because an
-/// "end of file" was reached prematurely.
+/// [`ErrorKind::EOF`] Expected more characters, but ended early.
 ///
-/// [`ErrorKind::SyntaxError`] Get a not expect character.
+/// [`ErrorKind::SyntaxError`] Get unexpected character.
 ///
-/// [`ErrorKind::NumberParseError`] Parse integer or float number error.
+/// [`ErrorKind::NumberParseError`] Integer or float parsing error.
 ///
-/// [`CastError`] Except type and save type not match or parse escape character error.
+/// [`CastError`] Type conversion error.
 ///
-/// [`NotFound`] Not found value of key.
+/// [`NotFound`] No value found for key.
 /// 
 /// [`TypeNotMatch`] Type mismatch.
 /// 
-/// [`ValueNull`] Return null of the key.
+/// [`ValueNull`] The value of key is null.
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ErrorKind {
     EOF,
     SyntaxError,
@@ -53,6 +52,7 @@ impl Error {
 
 use ErrorKind::*;
 
+/// Create from [`ParseIntError`].
 impl From<ParseIntError> for Error {
     fn from(_: ParseIntError) -> Self {
         Error {
@@ -62,6 +62,7 @@ impl From<ParseIntError> for Error {
     }
 }
 
+/// Create from [`ParseFloatError`].
 impl From<ParseFloatError> for Error {
     fn from(_: ParseFloatError) -> Self {
         Error {
@@ -71,6 +72,7 @@ impl From<ParseFloatError> for Error {
     }
 }
 
+/// Print or convert to string.
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(&self.kind, f)?;
@@ -78,6 +80,7 @@ impl Display for Error {
     }
 }
 
+/// Print or convert to string.
 impl Display for ErrorKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self, f)

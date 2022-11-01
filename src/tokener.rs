@@ -9,7 +9,6 @@ pub struct JsonTokener {
 
 const BOM: &str = "\u{feff}";
 
-///
 /// Parser of json string.
 impl JsonTokener {
     /// Create and init parser.
@@ -82,13 +81,13 @@ impl JsonTokener {
         };
     }
 
-    // 跳过空白字符和注释(/**/, //, #)
+    // skip comments and blank char.
     fn next_clean_internal(&mut self) -> Result<char> {
         while self.pos < self.len {
             match self.next() {
-                // 跳过空白字符
+                // blank.
                 '\t' | ' ' | '\n' | '\r' => continue,
-                // 跳过注释
+                // comments.
                 '/' => {
                     if self.will_eof(0) {
                         return Ok('/');
@@ -138,7 +137,6 @@ impl JsonTokener {
         Err(Error::new(ErrorKind::EOF, "need next char but return EOF"))
     }
 
-    // 跳到行尾部
     fn skip_to_end_of_line(&mut self) {
         let end_of_line = index_of_any(&self.chars, &['\r', '\n'], self.pos);
         if let Some(pos) = end_of_line {
@@ -148,10 +146,8 @@ impl JsonTokener {
         }
     }
 
-    ///
     /// Reads a sequence of key/value pairs and the trailing closing brace '}' of
     /// an object. The opening brace '{' should have already been read.
-    ///
     fn read_object(&mut self) -> Result<JsonObject> {
         // create return json object
         let mut json_object = JsonObject::new();
@@ -205,7 +201,6 @@ impl JsonTokener {
         }
     }
 
-    // 读取数组
     fn read_array(&mut self) -> Result<JsonArray> {
         let mut json_array = JsonArray::new();
 
@@ -249,7 +244,6 @@ impl JsonTokener {
         }
     }
 
-    // 读取字符串
     fn next_string(&mut self, quote: char) -> Result<String> {
         let mut builder = String::new();
 
@@ -288,7 +282,7 @@ impl JsonTokener {
         ));
     }
 
-    // 读取一个值
+    /// read a value, eg: true, false, null, number, etc.
     fn read_literal(&mut self) -> Result<JsonValue> {
         let literal = self.next_to_internal(&"{}[]/\\:,=;# \t\x0C");
         if literal.len() <= 0 {
@@ -335,7 +329,6 @@ impl JsonTokener {
         }
     }
 
-    // 读取一个转义字符
     fn read_escape_character(&mut self) -> Result<char> {
         return match self.next() {
             'u' => {
@@ -393,7 +386,6 @@ impl JsonTokener {
         };
     }
 
-    // 取下一个字面量
     fn next_to_internal(&mut self, excluded: &str) -> String {
         let start = self.pos;
 
@@ -407,25 +399,11 @@ impl JsonTokener {
         self.sub_str(start, self.len)
     }
 
-    // 语法错误
     fn syntax_error<T>(msg: &'static str) -> Result<T> {
         Err(Error::new(ErrorKind::SyntaxError, msg))
     }
 }
 
-///
-/// 从 list 中 查找 find
-///
-#[allow(dead_code)]
-pub fn index_of<T>(list: &[T], find: &T, from: usize) -> Option<usize>
-where
-    T: Eq,
-{
-    index_of_any(list, slice::from_ref(find), from)
-}
-
-///
-/// 从 list 找到 finds 任何一个的第一位索引
 pub fn index_of_any<T>(list: &[T], finds: &[T], from: usize) -> Option<usize>
 where
     T: Eq,
@@ -450,8 +428,6 @@ where
     None
 }
 
-///
-/// 从 list 中连续找到 finds 所有成员的首个索引
 fn index_of_all<T>(list: &[T], finds: &[T], from: usize) -> Option<usize>
 where
     T: Eq,

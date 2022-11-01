@@ -8,16 +8,7 @@ use crate::{
 };
 
 /// A modifiable set of name/value mappings. Names are unique, non-null strings.
-///  Values may be any mix of [`JsonValue`].
-///
-/// **This class can coerce values to another type when requested.**
-///
-/// 1. When the requested type is a [`bool`], strings will be coerced
-/// using a case-insensitive comparison to "true" and "false".
-///
-/// 2. When the requested type is a integer, [`i128`] or [`u128`] will be coerced return type.
-///
-/// 3. When the requested type is an float, [`i128`] or [`u128`] or [`f64`] will be coerced return type.
+///  Values may be any element of [`JsonValue`].
 #[derive(Debug, Clone)]
 pub struct JsonObject {
     map: LinkedHashMap<String, JsonValue>,

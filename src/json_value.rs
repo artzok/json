@@ -5,37 +5,36 @@ use crate::{utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonObject, Result,
 ///
 /// All JSON element type.
 ///
-/// [`JsonValue::None`] is 'null' value(ignore case).
+/// **This class can coerce values to another type when requested.** 
+/// 
+/// 1. When the requested type is a [`bool`], strings will be coerced
+/// using a case-insensitive comparison to "true" and "false".
 ///
-/// [`JsonValue::Bool`] is `bool` value, only equal `false` or `true`(ignore case).
+/// 2. When the requested type is a integer, [`i128`] or [`u128`] will 
+/// be coerced return type.
 ///
-/// [`JsonValue::Int`] is all negative integer, internal use of `i128` type save value.
+/// 3. When the requested type is an float, [`i128`] or [`u128`] or [`f64`] 
+/// will be coerced return type.
 ///
-/// [`JsonValue::Uint`] is all positive integer， internal use of `u128` type save value.
-///
-/// [`JsonValue::Int`] 和 [`JsonValue::Uint`] only for simple parse and save, internal save
-/// type not final type, will to cast specify type when user to get value. eg:
-/// Value `100` will save by `Uint(u128)` type, but you can use `JsonObject::get_i32` or
-/// `JsonObject::get_i16` ect, internal will use `as` to cast return type.
-///
-/// **Note:** `as` opteration maybe loss of precision or error result, but the `json` library
-/// doesn't do any processing.
-///
-/// [`JsonValue::String`] is a string value, all escape sequences have been escaped.
-///
-/// [`JsonValue::Object`] is nest JSON ojbect, internal use [`JsonObject`] save values.
-///
-/// [`JsonValue::Array`] is nest JSON array, internal use [`JsonArray`] save values.
-///
+/// **Note:** `as` opteration maybe loss of precision or error result, but 
+/// the `json` library doesn't do any processing.
 #[derive(Debug, Clone)]
 pub enum JsonValue {
+    /// Is `null` value(ignore case).
     Null,
+    /// Is `bool` value, only equal `false` or `true`(ignore case).
     Bool(bool),
+    /// Is all negative integer, use of `i128` type save value.
     Int(i128),
+    /// Is all positive integer，use of `u128` type save value.
     Uint(u128),
+    /// Is All float number, includings [`f32`] 和 [`f64`].
     Float(f64),
+    /// Is a string value, all escape sequences have been escaped.
     String(String),
+    /// Is nest JSON ojbect, internal use [`JsonObject`] save values.
     Object(JsonObject),
+    /// Is nest JSON array, internal use [`JsonArray`] save values.
     Array(JsonArray),
 }
 
@@ -64,7 +63,7 @@ impl JsonBuilder for JsonValue {
     }
 }
 
-/// for to string and print, internal use [`JsonBuilder`] implement.
+// for to string and print, internal use [`JsonBuilder`] implement.
 impl Display for JsonValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.build(String::new(), false, 0, ""))
@@ -89,6 +88,7 @@ impl ToJson for JsonValue {
 }
 
 impl JsonValue {
+    /// Convert to [`bool`] value.
     pub fn as_bool(&self) -> Result<bool> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -109,6 +109,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`i8`] value.
     pub fn as_i8(&self) -> Result<i8> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -118,6 +119,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`i16`] value.
     pub fn as_i16(&self) -> Result<i16> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -127,6 +129,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`i32`] value.
     pub fn as_i32(&self) -> Result<i32> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -136,6 +139,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`i64`] value.
     pub fn as_i64(&self) -> Result<i64> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -145,6 +149,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`i128`] value.
     pub fn as_i128(&self) -> Result<i128> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -154,6 +159,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`u8`] value.
     pub fn as_u8(&self) -> Result<u8> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -172,6 +178,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`u16`] value.
     pub fn as_u16(&self) -> Result<u16> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -190,6 +197,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`u32`] value.
     pub fn as_u32(&self) -> Result<u32> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -208,6 +216,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`u64`] value.
     pub fn as_u64(&self) -> Result<u64> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -226,6 +235,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`u128`] value.
     pub fn as_u128(&self) -> Result<u128> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -244,6 +254,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`f32`] value.
     pub fn as_f32(&self) -> Result<f32> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -254,6 +265,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`f64`] value.
     pub fn as_f64(&self) -> Result<f64> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -264,6 +276,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`&str`] value.
     pub fn as_str(&self) -> Result<&str> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -272,6 +285,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`&mut str`] value.
     pub fn as_mut_str(&mut self) -> Result<&mut str> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -280,6 +294,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`String`] value.
     pub fn as_string(self) -> Result<String> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -288,6 +303,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`&JsonObject`] value.
     pub fn as_object_ref(&self) -> Result<&JsonObject> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -296,6 +312,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`&mut JsonObject`] value.
     pub fn as_object_mut_ref(&mut self) -> Result<&mut JsonObject> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -304,6 +321,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`JsonObject`] value.
     pub fn as_object(self) -> Result<JsonObject> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -312,6 +330,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`&JsonArray`] value.
     pub fn as_array_ref(&self) -> Result<&JsonArray> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -320,6 +339,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`&mut JsonArray`] value.
     pub fn as_array_mut_ref(&mut self) -> Result<&mut JsonArray> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -328,6 +348,7 @@ impl JsonValue {
         }
     }
 
+    /// Convert to [`JsonArray`] value.
     pub fn as_array(self) -> Result<JsonArray> {
         match self {
             JsonValue::Null => Err(Error::new(ErrorKind::ValueNull, "value is null")),
@@ -336,90 +357,112 @@ impl JsonValue {
         }
     }
 
+    /// Convert to bool.
     pub fn opt_bool(&self) -> Option<bool> {
         self.as_bool().ok()
     }
 
+    /// Convert to i8.
     pub fn opt_i8(&self) -> Option<i8> {
         self.as_i8().ok()
     }
 
+    /// Convert to i16.
     pub fn opt_i16(&self) -> Option<i16> {
         self.as_i16().ok()
     }
 
+    /// Convert to i32.
     pub fn opt_i32(&self) -> Option<i32> {
         self.as_i32().ok()
     }
 
+    /// Convert to i64.
     pub fn opt_i64(&self) -> Option<i64> {
         self.as_i64().ok()
     }
 
+    /// Convert to i128.
     pub fn opt_i128(&self) -> Option<i128> {
         self.as_i128().ok()
     }
 
+    /// Convert to u8.
     pub fn opt_u8(&self) -> Option<u8> {
         self.as_u8().ok()
     }
 
+    /// Convert to u16.
     pub fn opt_u16(&self) -> Option<u16> {
         self.as_u16().ok()
     }
 
+    /// Convert to u32.
     pub fn opt_u32(&self) -> Option<u32> {
         self.as_u32().ok()
     }
 
+    /// Convert to u64.
     pub fn opt_u64(&self) -> Option<u64> {
         self.as_u64().ok()
     }
 
+    /// Convert to u128.
     pub fn opt_u128(&self) -> Option<u128> {
         self.as_u128().ok()
     }
 
+    /// Convert to f32.
     pub fn opt_f32(&self) -> Option<f32> {
         self.as_f32().ok()
     }
 
+    /// Convert to f64.
     pub fn opt_f64(&self) -> Option<f64> {
         self.as_f64().ok()
     }
 
+    /// Convert to &str.
     pub fn opt_str(&self) -> Option<&str> {
         self.as_str().ok()
     }
 
+    /// Convert to &mut str.
     pub fn opt_mut_str(&mut self) -> Option<&mut str> {
         self.as_mut_str().ok()
     }
 
+    /// Convert to String.
     pub fn opt_string(self) -> Option<String> {
         self.as_string().ok()
     }
 
+    /// Convert to &JsonObject.
     pub fn opt_object_ref(&self) -> Option<&JsonObject> {
         self.as_object_ref().ok()
     }
 
+    /// Convert to &mut JsonObject.
     pub fn opt_object_mut_ref(&mut self) -> Option<&mut JsonObject> {
         self.as_object_mut_ref().ok()
     }
 
+    /// Convert to JsonObject.
     pub fn opt_object(self) -> Option<JsonObject> {
         self.as_object().ok()
     }
 
+    /// Convert to &JsonArray.
     pub fn opt_array_ref(&self) -> Option<&JsonArray> {
         self.as_array_ref().ok()
     }
 
+    /// Convert to &mut JsonArray.
     pub fn opt_array_mut_ref(&mut self) -> Option<&mut JsonArray> {
         self.as_array_mut_ref().ok()
     }
 
+    /// Convert to JsonArray.
     pub fn opt_array(self) -> Option<JsonArray> {
         self.as_array().ok()
     }

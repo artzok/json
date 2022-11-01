@@ -2,18 +2,14 @@ use std::{fmt::Display, iter};
 
 use crate::{tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson};
 
-///
-/// [`JsonValue::Array`] 内部数据存储类型
-///
-/// 其内部以 [`Vec<JsonValue>`] 形式存储数组
-///
-#[derive(Debug, Clone)]
+ /// A dense indexed sequence of values. Values may be any element of [`JsonValue`].
+ #[derive(Debug, Clone)]
 pub struct JsonArray {
     list: Vec<JsonValue>,
 }
 
 impl JsonArray {
-    /// Create empty array.
+    /// Create an empty [`JsonArray`].
     pub fn new() -> JsonArray {
         JsonArray { list: vec![] }
     }
@@ -41,28 +37,28 @@ impl JsonArray {
 
     /// Add a [`JsonValue`] on `index`.
     ///
-    /// #Paincs
+    /// # Paincs
     ///
     /// Panics if `index > len`.
     pub fn insert<T: Into<JsonValue>>(&mut self, value: T, index: usize) {
         self.list.insert(index, value.into())
     }
 
-    /// Get value borrow of position `index`.
+    /// Get an immutable borrow of the value at `index` position
     ///
     /// Return [`None`] if `index` out of bounds.
     pub fn get(&self, index: usize) -> Option<&JsonValue> {
         self.list.get(index)
     }
 
-    /// Get value mut borrow of position `index`.
+    /// Get a mutable borrow of the value at `index` position
     ///
     /// Return [`None`] if `index` out of bounds.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut JsonValue> {
         self.list.get_mut(index)
     }
 
-    /// Check value is [`JsonValue::Null`] of position `index`.
+    /// Check if the value at the `index` position is [`JsonValue::Null`].
     pub fn is_null(&self, index: usize) -> bool {
         if let Some(JsonValue::Null) = self.get(index) {
             true
@@ -71,7 +67,7 @@ impl JsonArray {
         }
     }
 
-    /// Remove and return value of position `index`.
+    /// Remove and return the value at `index`.
     ///
     /// Return [`None`] if `index` out of bounds.
     pub fn remove(&mut self, index: usize) -> Option<JsonValue> {
@@ -87,6 +83,7 @@ impl JsonArray {
         self.list.len()
     }
 
+    /// Check array is empty.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -131,12 +128,14 @@ impl JsonBuilder for JsonArray {
     }
 }
 
+// For print and convert to string.
 impl Display for JsonArray {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.build(String::new(), false, 0, ""))
     }
 }
 
+// For convert to pretty string.
 impl ToJson for JsonArray {
     fn pretty(&self) -> String {
         self.to_json(true, "| ")

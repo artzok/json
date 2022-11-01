@@ -43,7 +43,6 @@ pub fn parse(str: &str) -> Result<JsonValue> {
 /// # See also:
 ///
 /// [`parse`] method return type.
-/// ```
 pub type Result<T> = result::Result<T, Error>;
 
 /// Used to build JSON strings from [`JsonValue`], for internal use only.
