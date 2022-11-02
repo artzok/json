@@ -1,4 +1,4 @@
-use crate::{utils, Error, ErrorKind, JsonArray, JsonObject, JsonValue, Result};
+use crate::{Error, ErrorKind, JsonArray, JsonObject, JsonValue, Result};
 
 pub struct JsonTokener<'a> {
     bytes: &'a [u8],
@@ -24,46 +24,16 @@ impl<'a> JsonTokener<'a> {
         JsonTokener { bytes, pos: 0, len }
     }
 
-    // (code, byte_count)
     #[inline]
-    fn next_code_point(&self) -> (u32, usize) {
-        let x = self.bytes[self.pos];
-        if x < 128 {
-            return (x as u32, 1);
-        } else {
-            let init = utils::utf8_first_byte(x, 2);
-            let y = self.bytes[self.pos + 1];
-            let mut ch = utils::utf8_acc_cont_byte(init, y);
-            if x >= 0xE0 {
-                let z = self.bytes[self.pos + 2];
-                let y_z = utils::utf8_acc_cont_byte((y & utils::CONT_MASK) as u32, z);
-                ch = init << 12 | y_z;
-                if x >= 0xF0 {
-                    let w = self.bytes[self.pos + 3];
-                    ch = (init & 7) << 18 | utils::utf8_acc_cont_byte(y_z, w);
-                    (ch, 4)
-                } else {
-                    (ch, 3)
-                }
-            } else {
-                (ch, 2)
-            }
-        }
+    fn next(&mut self) -> u8 {
+        let b = self.bytes[self.pos];
+        self.pos += 1;
+        b
     }
 
-    /// Get the current `pos` character and advance `pos` to next one.
     #[inline]
-    fn next(&mut self) -> char {
-        let (code, size) = self.next_code_point();
-        self.pos += size;
-        unsafe { char::from_u32_unchecked(code) }
-    }
-
-    /// Just get the current `pos` charactor.
-    #[inline]
-    fn current(&self) -> char {
-        let (code, _) = self.next_code_point();
-        unsafe { char::from_u32_unchecked(code) }
+    fn current(&mut self) -> u8 {
+        self.bytes[self.pos]
     }
 
     /// `pos` plus `offset` will exceed `len - 1`.
@@ -76,9 +46,6 @@ impl<'a> JsonTokener<'a> {
     #[inline]
     fn back(&mut self) {
         self.pos -= 1;
-        while self.bytes[self.pos] & 0b1100_0000 == 0b1000_0000 {
-            self.pos -= 1;
-        }
     }
 
     // `pos` to next one.
@@ -89,23 +56,23 @@ impl<'a> JsonTokener<'a> {
 
     /// Create sub string from chars.
     #[inline]
-    fn sub_str(&self, start: usize, end: usize) -> String {
-        String::from_utf8_lossy(&self.bytes[start..end]).into_owned()
+    fn sub_str(&self, start: usize, end: usize) -> &str {
+        std::str::from_utf8(&self.bytes[start..end]).unwrap()
     }
 
     /// parse next JSON element.
     pub fn next_value(&mut self) -> Result<JsonValue> {
         let c = self.next_clean_internal()?;
         return match c {
-            '{' => {
+            b'{' => {
                 let object = self.read_object()?;
                 Ok(JsonValue::Object(object))
             }
-            '[' => {
+            b'[' => {
                 let array = self.read_array()?;
                 Ok(JsonValue::Array(array))
             }
-            '\'' | '"' => {
+            b'\'' | b'"' => {
                 let str = self.next_string(c)?;
                 Ok(JsonValue::String(str))
             }
@@ -116,24 +83,61 @@ impl<'a> JsonTokener<'a> {
         };
     }
 
+    pub fn index_of_all(&self, bytes: &[u8]) -> Option<usize> {
+        let mut index = self.pos;
+        let mut offset = 0;
+        let mut go_on = true;
+
+        loop {
+            if index < self.len {
+                if self.bytes[index] == bytes[offset] {
+                    offset += 1;
+                    if offset == bytes.len() {
+                        return Some(index);
+                    }
+                    go_on = false;
+                } else if !go_on {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+            index += 1;
+        }
+    }
+
+    pub fn index_of_any(&self, bytes: &[u8]) -> Option<usize> {
+        let mut index = self.pos;
+        loop {
+            if index < self.len {
+                if bytes.contains(&self.bytes[index]) {
+                    return Some(index);
+                }
+            } else {
+                return None;
+            }
+            index += 1;
+        }
+    }
+
     // skip comments and blank char.
-    fn next_clean_internal(&mut self) -> Result<char> {
+    fn next_clean_internal(&mut self) -> Result<u8> {
         while self.pos < self.len {
             match self.next() {
                 // blank.
-                '\t' | ' ' | '\n' | '\r' => continue,
+                b'\t' | b' ' | b'\n' | b'\r' => continue,
                 // comments.
-                '/' => {
+                b'/' => {
                     if self.will_eof(0) {
-                        return Ok('/');
+                        return Ok(b'/');
                     }
                     match self.current() {
-                        '*' => {
+                        b'*' => {
                             // to next char
                             self.advance(1);
 
                             // end comment of C style
-                            let comment_end = index_of_all(&self.bytes, &[b'*', b'/'], self.pos);
+                            let comment_end = self.index_of_all(&[b'*', b'/']);
 
                             match comment_end {
                                 // return error if not found
@@ -148,7 +152,7 @@ impl<'a> JsonTokener<'a> {
                                 }
                             }
                         }
-                        '/' => {
+                        b'/' => {
                             // to next line and continue
                             self.advance(1);
 
@@ -156,10 +160,10 @@ impl<'a> JsonTokener<'a> {
                             continue;
                         }
                         // return '/'
-                        _ => return Ok('/'),
+                        _ => return Ok(b'/'),
                     }
                 }
-                '#' => {
+                b'#' => {
                     // to next line and continue
                     self.skip_to_end_of_line();
                     continue;
@@ -173,7 +177,7 @@ impl<'a> JsonTokener<'a> {
     }
 
     fn skip_to_end_of_line(&mut self) {
-        let end_of_line = index_of_any(&self.bytes, &[b'\r', b'\n'], self.pos);
+        let end_of_line = self.index_of_any(&[b'\r', b'\n']);
         if let Some(pos) = end_of_line {
             self.pos = pos + 1;
         } else {
@@ -188,7 +192,7 @@ impl<'a> JsonTokener<'a> {
         let mut json_object = JsonObject::new();
 
         // Peek to see if this is the empty object.
-        if self.next_clean_internal()? == '}' {
+        if self.next_clean_internal()? == b'}' {
             return Ok(json_object);
         } else {
             self.back();
@@ -200,14 +204,14 @@ impl<'a> JsonTokener<'a> {
                 //  equals sign '=', or an arrow "=>". The last two are bogus but we
                 //  include them because that's what the original implementation did.
                 let separator = self.next_clean_internal()?;
-                if separator != ':' && separator != '=' {
+                if separator != b':' && separator != b'=' {
                     return JsonTokener::syntax_error(
                         "after key must have : or => separator in object",
                     );
                 }
 
                 // if has a char '>' after ':' or '=', then ignore it.
-                if !self.will_eof(0) && self.current() == '>' {
+                if !self.will_eof(0) && self.current() == b'>' {
                     self.advance(1);
                 }
 
@@ -216,11 +220,11 @@ impl<'a> JsonTokener<'a> {
                 json_object.insert(name, value);
 
                 match self.next_clean_internal()? {
-                    '}' => {
+                    b'}' => {
                         // end
                         return Ok(json_object);
                     }
-                    ';' | ',' => {
+                    b';' | b',' => {
                         // more field
                         continue;
                     }
@@ -243,13 +247,13 @@ impl<'a> JsonTokener<'a> {
 
         loop {
             match self.next_clean_internal()? {
-                ']' => {
+                b']' => {
                     if has_trailing_separator {
                         json_array.push(JsonValue::Null);
                     }
                     return Ok(json_array);
                 }
-                ',' | ';' => {
+                b',' | b';' => {
                     json_array.push(JsonValue::Null);
                     has_trailing_separator = true;
                     continue;
@@ -263,10 +267,10 @@ impl<'a> JsonTokener<'a> {
             json_array.push(value);
 
             match self.next_clean_internal()? {
-                ']' => {
+                b']' => {
                     return Ok(json_array);
                 }
-                ',' | ';' => {
+                b',' | b';' => {
                     has_trailing_separator = true;
                     continue;
                 }
@@ -279,33 +283,33 @@ impl<'a> JsonTokener<'a> {
         }
     }
 
-    fn next_string(&mut self, quote: char) -> Result<String> {
-        let mut builder = String::new();
+    fn next_string(&mut self, quote: u8) -> Result<String> {
+        let mut builder = String::with_capacity(30);
 
         let mut start = self.pos;
 
         while self.pos < self.len {
             let ch = self.next();
             if ch == quote {
-                builder.push_str(&self.sub_str(start, self.pos - 1));
+                builder.push_str(self.sub_str(start, self.pos - 1));
                 return Ok(builder);
             }
 
-            if ch == '\r' || ch == '\n' {
+            if ch == b'\r' || ch == b'\n' {
                 return Err(Error::new(
                     ErrorKind::SyntaxError,
                     "string can't contain \\r or \\n",
                 ));
             }
 
-            if ch == '\\' {
+            if ch == b'\\' {
                 if self.will_eof(0) {
                     return Err(Error::new(
                         ErrorKind::EOF,
                         "ready to read escape character in string but get EOF",
                     ));
                 }
-                builder.push_str(&self.sub_str(start, self.pos - 1));
+                builder.push_str(self.sub_str(start, self.pos - 1));
                 let escape_str = self.read_escape_character()?;
                 builder.push(escape_str);
                 start = self.pos;
@@ -366,7 +370,7 @@ impl<'a> JsonTokener<'a> {
 
     fn read_escape_character(&mut self) -> Result<char> {
         return match self.next() {
-            'u' => {
+            b'u' => {
                 // return error if get eof, need 4 char
                 if self.will_eof(3) {
                     return Err(Error::new(ErrorKind::EOF, "read unicode get EOF"));
@@ -374,14 +378,13 @@ impl<'a> JsonTokener<'a> {
 
                 // get escape unicode string
                 let unicode_str = self.sub_str(self.pos, self.pos + 4);
-                self.advance(4);
-
                 // convert escape unicode string to unicode char
-                let mut unicode = u32::from_str_radix(&unicode_str, 16)?;
+                let mut unicode = u32::from_str_radix(unicode_str, 16)?;
+                self.advance(4);
 
                 if unicode >= 0xD800 {
                     // check next code escape prefix \u
-                    if self.next() != '\\' || self.next() != 'u' {
+                    if self.next() != b'\\' || self.next() != b'u' {
                         return Err(Error::new(
                             ErrorKind::SyntaxError,
                             "fail read next unicode, beacuse not found \\u",
@@ -394,8 +397,8 @@ impl<'a> JsonTokener<'a> {
 
                     // get sub code str
                     let sub_unicode_str = self.sub_str(self.pos, self.pos + 4);
+                    let sub_unicode = u32::from_str_radix(sub_unicode_str, 16)?;
                     self.advance(4);
-                    let sub_unicode = u32::from_str_radix(&sub_unicode_str, 16)?;
                     unicode = (((unicode - 0xD800) << 10) | (sub_unicode - 0xDC00)) + 0x10000
                 }
 
@@ -408,25 +411,25 @@ impl<'a> JsonTokener<'a> {
                     ))
                 }
             }
-            't' => Ok('\t'),
-            'b' => Ok('\x08'),
-            'n' => Ok('\n'),
-            'r' => Ok('\r'),
-            'f' => Ok('\x0C'),
-            '\'' => Ok('\''),
-            '\"' => Ok('\"'),
-            '\\' => Ok('\\'),
-            '/' => Ok('/'),
+            b't' => Ok('\t'),
+            b'b' => Ok('\x08'),
+            b'n' => Ok('\n'),
+            b'r' => Ok('\r'),
+            b'f' => Ok('\x0C'),
+            b'\'' => Ok('\''),
+            b'\"' => Ok('\"'),
+            b'\\' => Ok('\\'),
+            b'/' => Ok('/'),
             _ => Err(Error::new(ErrorKind::SyntaxError, "error escape")),
         };
     }
 
-    fn next_to_internal(&mut self, excluded: &str) -> String {
+    fn next_to_internal(&mut self, excluded: &str) -> &str {
         let start = self.pos;
 
         while self.pos < self.len {
             let ch = self.current();
-            if ch == '\r' || ch == '\n' || excluded.chars().any(|c| c == ch) {
+            if ch == b'\r' || ch == b'\n' || excluded.bytes().any(|c| c == ch) {
                 return self.sub_str(start, self.pos);
             }
             self.pos += 1;
@@ -438,91 +441,10 @@ impl<'a> JsonTokener<'a> {
         Err(Error::new(ErrorKind::SyntaxError, msg))
     }
 }
-
-pub fn index_of_any<T>(list: &[T], finds: &[T], from: usize) -> Option<usize>
-where
-    T: Eq,
-{
-    if list.is_empty() {
-        return None;
-    }
-
-    if finds.is_empty() {
-        return None;
-    }
-
-    if from > list.len() - 1 {
-        return None;
-    }
-
-    for (index, item) in list[from..].iter().enumerate() {
-        if finds.iter().any(|c| c == item) {
-            return Some(index + from);
-        }
-    }
-    None
-}
-
-fn index_of_all<T>(list: &[T], finds: &[T], from: usize) -> Option<usize>
-where
-    T: Eq,
-{
-    if list.is_empty() {
-        return None;
-    }
-
-    if finds.is_empty() {
-        return None;
-    }
-
-    if from > list.len() - finds.len() {
-        return None;
-    }
-
-    let first = &finds[0];
-
-    for (index, item) in list[from..].iter().enumerate() {
-        if item == first {
-            let mut pos = 1;
-
-            if finds[1..].iter().all(|c| {
-                let o = list.get(from + index + pos);
-                pos += 1;
-                o.is_some() && o.unwrap() == c
-            }) {
-                return Some(index + from);
-            }
-        }
-    }
-
-    None
-}
-
 #[cfg(test)]
 mod test {
 
-    use std::vec;
-
     use super::*;
-
-    #[test]
-    fn test_index_any() {
-        let list = vec!['a', '\r', '\n', 'f'];
-        assert_eq!(index_of_any(&list, &['\r', '\n'], 0), Some(1));
-        assert_eq!(index_of_any(&list, &['\r', '\n'], 2), Some(2));
-    }
-
-    #[test]
-    fn test_index_of_all() {
-        let list = vec![1, 2, 3, 4];
-        assert_eq!(index_of_all(&list, &[1, 2], 0), Some(0));
-        assert_eq!(index_of_all(&list, &[1, 2], 2), None);
-        assert_eq!(index_of_all(&list, &[2, 3], 0), Some(1));
-        assert_eq!(index_of_all(&list, &[2, 3], 1), Some(1));
-        assert_eq!(index_of_all(&list, &[2, 3], 4), None);
-        assert_eq!(index_of_all(&list, &[4, 10], 4), None);
-        assert_eq!(index_of_all(&list, &[10, 11], 0), None);
-    }
 
     #[test]
     fn tokener_bom() {
