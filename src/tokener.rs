@@ -83,6 +83,7 @@ impl<'a> JsonTokener<'a> {
         };
     }
 
+    #[inline]
     pub fn index_of_all(&self, bytes: &[u8]) -> Option<usize> {
         let mut index = self.pos;
         let mut offset = 0;
@@ -106,6 +107,7 @@ impl<'a> JsonTokener<'a> {
         }
     }
 
+    #[inline]
     pub fn index_of_any(&self, bytes: &[u8]) -> Option<usize> {
         let mut index = self.pos;
         loop {
@@ -125,7 +127,7 @@ impl<'a> JsonTokener<'a> {
         while self.pos < self.len {
             match self.next() {
                 // blank.
-                b'\t' | b' ' | b'\n' | b'\r' => continue,
+                b'\n' | b'\t' | b' ' | b'\r' => continue,
                 // comments.
                 b'/' => {
                     if self.will_eof(0) {
@@ -177,7 +179,7 @@ impl<'a> JsonTokener<'a> {
     }
 
     fn skip_to_end_of_line(&mut self) {
-        let end_of_line = self.index_of_any(&[b'\r', b'\n']);
+        let end_of_line = self.index_of_any(&[b'\n', b'\r']);
         if let Some(pos) = end_of_line {
             self.pos = pos + 1;
         } else {
@@ -284,7 +286,7 @@ impl<'a> JsonTokener<'a> {
     }
 
     fn next_string(&mut self, quote: u8) -> Result<String> {
-        let mut builder = String::with_capacity(30);
+        let mut builder = String::with_capacity(20);
 
         let mut start = self.pos;
 
@@ -295,7 +297,7 @@ impl<'a> JsonTokener<'a> {
                 return Ok(builder);
             }
 
-            if ch == b'\r' || ch == b'\n' {
+            if ch == b'\n' || ch == b'\r' {
                 return Err(Error::new(
                     ErrorKind::SyntaxError,
                     "string can't contain \\r or \\n",
@@ -323,7 +325,9 @@ impl<'a> JsonTokener<'a> {
 
     /// read a value, eg: true, false, null, number, etc.
     fn read_literal(&mut self) -> Result<JsonValue> {
-        let literal = self.next_to_internal(&"{}[]/\\:,=;# \t\x0C");
+        let literal = self.next_to_internal(&[
+            b' ', b'{', b'}', b'[', b']', b'/', b'\\', b':', b',', b'=', b';', b'#', b'\t', b'\x0C',
+        ]);
         if literal.len() <= 0 {
             return JsonTokener::syntax_error("read a literal but get empty");
         }
@@ -424,12 +428,12 @@ impl<'a> JsonTokener<'a> {
         };
     }
 
-    fn next_to_internal(&mut self, excluded: &str) -> &str {
+    fn next_to_internal(&mut self, excluded: &[u8]) -> &str {
         let start = self.pos;
 
         while self.pos < self.len {
             let ch = self.current();
-            if ch == b'\r' || ch == b'\n' || excluded.bytes().any(|c| c == ch) {
+            if ch == b'\n' || ch == b'\r' || excluded.contains(&ch) {
                 return self.sub_str(start, self.pos);
             }
             self.pos += 1;
@@ -441,6 +445,7 @@ impl<'a> JsonTokener<'a> {
         Err(Error::new(ErrorKind::SyntaxError, msg))
     }
 }
+
 #[cfg(test)]
 mod test {
 
