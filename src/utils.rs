@@ -15,3 +15,15 @@ pub fn replace_escape(str: &str) -> String {
     });
     result
 }
+
+pub const CONT_MASK: u8 = 0b0011_1111;
+
+#[inline]
+pub(crate) const fn utf8_first_byte(byte: u8, width: u32) -> u32 {
+    (byte & (0x7F >> width)) as u32
+}
+
+#[inline]
+pub const fn utf8_acc_cont_byte(ch: u32, byte: u8) -> u32 {
+    (ch << 6) | (byte & CONT_MASK) as u32
+}

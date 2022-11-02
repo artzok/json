@@ -1,7 +1,7 @@
-use crate::{Error, ErrorKind, JsonArray, JsonObject, JsonValue, Result};
+use crate::{utils, Error, ErrorKind, JsonArray, JsonObject, JsonValue, Result};
 
-pub struct JsonTokener {
-    chars: Vec<char>,
+pub struct JsonTokener<'a> {
+    bytes: &'a [u8],
     pos: usize,
     len: usize,
 }
@@ -9,7 +9,7 @@ pub struct JsonTokener {
 const BOM: &str = "\u{feff}";
 
 /// Parser of json string.
-impl JsonTokener {
+impl<'a> JsonTokener<'a> {
     /// Create and init parser.
     pub fn new(str: &str) -> JsonTokener {
         // remove bom prefix
@@ -19,41 +19,78 @@ impl JsonTokener {
             str
         };
 
-        let chars: Vec<char> = str.chars().collect();
-        let len = chars.len();
-        JsonTokener { chars, pos: 0, len }
+        let bytes = str.as_bytes();
+        let len = bytes.len();
+        JsonTokener { bytes, pos: 0, len }
+    }
+
+    // (code, byte_count)
+    #[inline]
+    fn next_code_point(&self) -> (u32, usize) {
+        let x = self.bytes[self.pos];
+        if x < 128 {
+            return (x as u32, 1);
+        } else {
+            let init = utils::utf8_first_byte(x, 2);
+            let y = self.bytes[self.pos + 1];
+            let mut ch = utils::utf8_acc_cont_byte(init, y);
+            if x >= 0xE0 {
+                let z = self.bytes[self.pos + 2];
+                let y_z = utils::utf8_acc_cont_byte((y & utils::CONT_MASK) as u32, z);
+                ch = init << 12 | y_z;
+                if x >= 0xF0 {
+                    let w = self.bytes[self.pos + 3];
+                    ch = (init & 7) << 18 | utils::utf8_acc_cont_byte(y_z, w);
+                    (ch, 4)
+                } else {
+                    (ch, 3)
+                }
+            } else {
+                (ch, 2)
+            }
+        }
     }
 
     /// Get the current `pos` character and advance `pos` to next one.
+    #[inline]
     fn next(&mut self) -> char {
-        let ch = self.chars[self.pos];
-        self.pos += 1;
-        ch
+        let (code, size) = self.next_code_point();
+        self.pos += size;
+        unsafe { char::from_u32_unchecked(code) }
     }
 
     /// Just get the current `pos` charactor.
+    #[inline]
     fn current(&self) -> char {
-        self.chars[self.pos]
+        let (code, _) = self.next_code_point();
+        unsafe { char::from_u32_unchecked(code) }
     }
 
     /// `pos` plus `offset` will exceed `len - 1`.
+    #[inline]
     fn will_eof(&self, offset: usize) -> bool {
         return self.pos + offset >= self.len;
     }
 
     /// `pos` go back to the previous position.
+    #[inline]
     fn back(&mut self) {
         self.pos -= 1;
+        while self.bytes[self.pos] & 0b1100_0000 == 0b1000_0000 {
+            self.pos -= 1;
+        }
     }
 
     // `pos` to next one.
+    #[inline]
     fn advance(&mut self, offset: usize) {
         self.pos += offset;
     }
 
     /// Create sub string from chars.
+    #[inline]
     fn sub_str(&self, start: usize, end: usize) -> String {
-        self.chars[start..end].iter().collect()
+        String::from_utf8_lossy(&self.bytes[start..end]).into_owned()
     }
 
     /// parse next JSON element.
@@ -96,7 +133,7 @@ impl JsonTokener {
                             self.advance(1);
 
                             // end comment of C style
-                            let comment_end = index_of_all(&self.chars, &['*', '/'], self.pos);
+                            let comment_end = index_of_all(&self.bytes, &[b'*', b'/'], self.pos);
 
                             match comment_end {
                                 // return error if not found
@@ -136,7 +173,7 @@ impl JsonTokener {
     }
 
     fn skip_to_end_of_line(&mut self) {
-        let end_of_line = index_of_any(&self.chars, &['\r', '\n'], self.pos);
+        let end_of_line = index_of_any(&self.bytes, &[b'\r', b'\n'], self.pos);
         if let Some(pos) = end_of_line {
             self.pos = pos + 1;
         } else {
