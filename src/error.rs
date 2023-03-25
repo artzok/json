@@ -76,7 +76,7 @@ impl From<ParseFloatError> for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(&self.kind, f)?;
-        write!(f, ":{}", self.msg)
+        write!(f, ": {}", self.msg)
     }
 }
 

@@ -45,7 +45,7 @@ fn main() {
 
 fn format_json(json: &str, indent: &str) {
     let json = json::parse(&json).unwrap_or_else(|e| {
-        println!("parse json failed: {}", e);
+        println!("{}", e);
         std::process::exit(-1);
     });
     println!("{}", json.to_json(true, indent));
