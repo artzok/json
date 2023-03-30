@@ -1,6 +1,8 @@
 use std::{fmt::Display, iter};
 
-use crate::{tokener::JsonTokener, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson};
+use crate::{
+    tokener::JsonTokener, BuildConfig, Error, ErrorKind, JsonBuilder, JsonValue, Result, ToJson,
+};
 
 /// A dense indexed sequence of values. Values may be any element of [`JsonValue`].
 #[derive(Debug, Clone)]
@@ -90,22 +92,21 @@ impl JsonArray {
 }
 
 impl JsonBuilder for JsonArray {
-    fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
+    fn build(&self, mut json: String, level: usize, cfg: &BuildConfig) -> String {
         json.push('[');
-
         let last = if self.is_empty() { 0 } else { self.len() - 1 };
-        let indents: String = iter::repeat(indent).take(level + 1_usize).collect();
+        let indents: String = iter::repeat(cfg.indent).take(level + 1_usize).collect();
 
         for (index, item) in self.list.iter().enumerate() {
             // push \n
-            if pretty {
+            if cfg.pretty {
                 json.push('\n');
                 // push indent
                 json.push_str(&indents);
             }
 
             // push value
-            json = item.build(json, pretty, level + 1, indent);
+            json = item.build(json, level + 1, cfg);
 
             // push ,
             if index < last {
@@ -114,11 +115,11 @@ impl JsonBuilder for JsonArray {
         }
 
         // push \n
-        if pretty {
+        if cfg.pretty {
             json.push('\n');
 
             if level > 0 {
-                let indents: String = iter::repeat(indent).take(level).collect();
+                let indents: String = iter::repeat(cfg.indent).take(level).collect();
                 json.push_str(&indents);
             }
         }
@@ -131,17 +132,21 @@ impl JsonBuilder for JsonArray {
 // For print and convert to string.
 impl Display for JsonArray {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.build(String::new(), false, 0, ""))
+        write!(
+            f,
+            "{}",
+            self.build(String::new(), 0, &BuildConfig::default())
+        )
     }
 }
 
 // For convert to pretty string.
 impl ToJson for JsonArray {
     fn pretty(&self) -> String {
-        self.to_json(true, "| ")
+        self.to_json(&BuildConfig::pretty())
     }
 
-    fn to_json(&self, pretty: bool, indent: &str) -> String {
-        self.build(String::new(), pretty, 0, indent)
+    fn to_json(&self, cfg: &BuildConfig) -> String {
+        self.build(String::new(), 0, cfg)
     }
 }

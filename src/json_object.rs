@@ -4,7 +4,7 @@ use linked_hash_map::LinkedHashMap;
 
 use crate::{
     tokener::JsonTokener, utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonValue, Result,
-    ToJson,
+    ToJson, BuildConfig,
 };
 
 /// A modifiable set of name/value mappings. Names are unique, non-null strings.
@@ -119,15 +119,15 @@ impl JsonObject {
 }
 
 impl JsonBuilder for JsonObject {
-    fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
+    fn build(&self, mut json: String, level: usize, cfg: &BuildConfig) -> String {
         json.push('{');
 
         let last = if self.is_empty() { 0 } else { self.len() - 1 };
-        let indents: String = iter::repeat(indent).take(level + 1).collect();
+        let indents: String = iter::repeat(cfg.indent).take(level + 1).collect();
 
         for (index, (key, value)) in self.map.iter().enumerate() {
             // push indents
-            if pretty {
+            if cfg.pretty {
                 json.push('\n');
                 json.push_str(&indents);
             }
@@ -137,12 +137,12 @@ impl JsonBuilder for JsonObject {
             json.push_str(&utils::replace_escape(key));
             json.push_str("\":");
 
-            if pretty {
+            if cfg.pretty {
                 json.push(' ');
             }
 
             // push value
-            json = value.build(json, pretty, level + 1, indent);
+            json = value.build(json, level + 1, cfg);
 
             // push ,
             if index < last {
@@ -151,11 +151,11 @@ impl JsonBuilder for JsonObject {
         }
 
         // push \n
-        if pretty {
+        if cfg.pretty {
             json.push('\n');
 
             if level > 0 {
-                let indents: String = iter::repeat(indent).take(level).collect();
+                let indents: String = iter::repeat(cfg.indent).take(level).collect();
                 json.push_str(&indents);
             }
         }
@@ -166,16 +166,16 @@ impl JsonBuilder for JsonObject {
 
 impl Display for JsonObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.build(String::new(), false, 0, ""))
+        write!(f, "{}", self.build(String::new(), 0, &BuildConfig::pretty()))
     }
 }
 
 impl ToJson for JsonObject {
     fn pretty(&self) -> String {
-        self.to_json(true, "| ")
+        self.to_json(&BuildConfig::pretty())
     }
 
-    fn to_json(&self, pretty: bool, indent: &str) -> String {
-        self.build(String::new(), pretty, 0, indent)
+    fn to_json(&self, cfg: &BuildConfig) -> String {
+        self.build(String::new(), 0, cfg)
     }
 }

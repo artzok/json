@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
-use crate::{utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonObject, Result, ToJson};
+use crate::{
+    utils, BuildConfig, Error, ErrorKind, JsonArray, JsonBuilder, JsonObject, Result, ToJson,
+};
 
 ///
 /// All JSON element type.
@@ -40,7 +42,7 @@ pub enum JsonValue {
 
 /// Build JSON string, for internal use.
 impl JsonBuilder for JsonValue {
-    fn build(&self, mut json: String, pretty: bool, level: usize, indent: &str) -> String {
+    fn build(&self, mut json: String, level: usize, cfg: &BuildConfig) -> String {
         match self {
             JsonValue::Null => json.push_str("null"),
             JsonValue::Bool(b) => json.push_str(if *b { "false" } else { "true" }),
@@ -48,15 +50,26 @@ impl JsonBuilder for JsonValue {
             JsonValue::Uint(u) => json.push_str(&u.to_string()),
             JsonValue::Float(d) => json.push_str(&d.to_string()),
             JsonValue::String(s) => {
-                json.push('\"');
-                json.push_str(&utils::replace_escape(s));
-                json.push('\"');
+                // 尝试将内部嵌套JSON解析出来
+                let mut parse_nest_success = false;
+                if cfg.check_nest {
+                    let nest_json = super::parse(&s.replace("\\\"", "\""));
+                    if nest_json.is_ok() {
+                        json = nest_json.unwrap().build(json, level, cfg);
+                        parse_nest_success = true;
+                    }
+                }
+                if !parse_nest_success {
+                    json.push('\"');
+                    json.push_str(&utils::replace_escape(s));
+                    json.push('\"');
+                }
             }
             JsonValue::Array(array) => {
-                json = JsonBuilder::build(array, json, pretty, level, indent);
+                json = JsonBuilder::build(array, json, level, cfg);
             }
             JsonValue::Object(object) => {
-                json = JsonBuilder::build(object, json, pretty, level, indent);
+                json = JsonBuilder::build(object, json, level, cfg);
             }
         }
         json
@@ -66,7 +79,11 @@ impl JsonBuilder for JsonValue {
 // for to string and print, internal use [`JsonBuilder`] implement.
 impl Display for JsonValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.build(String::new(), false, 0, ""))
+        write!(
+            f,
+            "{}",
+            self.build(String::new(), 0, &BuildConfig::default())
+        )
     }
 }
 
@@ -74,7 +91,7 @@ impl Display for JsonValue {
 impl ToJson for JsonValue {
     /// Convert JsonValue to pretty json string.
     fn pretty(&self) -> String {
-        self.to_json(true, "| ")
+        self.to_json(&BuildConfig::pretty())
     }
 
     /// Convert JsonValue to style json string.
@@ -82,8 +99,11 @@ impl ToJson for JsonValue {
     /// If `pretty` is true, will use '\n' to convert pretty json string.
     ///
     /// `indent` is prefix of every line, only use when `pretty` is true.
-    fn to_json(&self, pretty: bool, indent: &str) -> String {
-        self.build(String::new(), pretty, 0, indent)
+    ///
+    /// If `check_nest` is true, will check nest json in [JsonValue::String]
+    /// and fomart it.
+    fn to_json(&self, cfg: &BuildConfig) -> String {
+        self.build(String::new(), 0, cfg)
     }
 }
 

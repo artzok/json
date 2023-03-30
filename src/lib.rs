@@ -45,9 +45,40 @@ pub fn parse(str: &str) -> Result<JsonValue> {
 /// [`parse`] method return type.
 pub type Result<T> = result::Result<T, Error>;
 
+pub struct BuildConfig<'a> {
+    pretty: bool,     // 漂亮格式化
+    indent: &'a str,  // 前导字符
+    check_nest: bool, // 检查嵌套 json
+}
+
+impl<'a> BuildConfig<'a> {
+    pub fn new(pretty: bool, indent: &'a str, check_nest: bool) -> BuildConfig {
+        BuildConfig {
+            pretty,
+            indent,
+            check_nest,
+        }
+    }
+    fn default() -> BuildConfig<'static> {
+        BuildConfig {
+            pretty: false,
+            indent: "",
+            check_nest: false,
+        }
+    }
+
+    fn pretty() -> BuildConfig<'static> {
+        BuildConfig {
+            pretty: true,
+            indent: "| ",
+            check_nest: false,
+        }
+    }
+}
+
 /// Used to build JSON strings from [`JsonValue`], for internal use only.
 trait JsonBuilder {
-    fn build(&self, json: String, pretty: bool, level: usize, indent: &str) -> String;
+    fn build(&self, json: String, level: usize, cfg: &BuildConfig) -> String;
 }
 
 /// Public trait for converting [`JsonValue`] to JSON string.
@@ -62,14 +93,15 @@ trait JsonBuilder {
 ///
 /// ```
 /// use json::ToJson;
+/// use json::BuildConfig;
 ///
 /// let str = "{\"key\" : \"value\", \"array\": [1, \"rust\", false, 12.5]}";
 /// let json = json::parse(str).unwrap();
 /// println!("{}", json.pretty());
-/// println!("{}", json.to_json(true, " "));
+/// println!("{}", json.to_json(&BuildConfig::new(true, "| ", false)));
 /// ```
 ///
 pub trait ToJson {
     fn pretty(&self) -> String;
-    fn to_json(&self, pretty: bool, indent: &str) -> String;
+    fn to_json(&self, cfg: &BuildConfig) -> String;
 }
