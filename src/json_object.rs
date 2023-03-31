@@ -120,7 +120,7 @@ impl JsonObject {
 
 impl JsonBuilder for JsonObject {
     fn build(&self, mut json: String, level: usize, cfg: &BuildConfig) -> String {
-        json.push('{');
+        json.push_str(&(cfg.control_converter)('{'));
 
         let last = if self.is_empty() { 0 } else { self.len() - 1 };
         let indents: String = iter::repeat(cfg.indent).take(level + 1).collect();
@@ -133,9 +133,10 @@ impl JsonBuilder for JsonObject {
             }
 
             // push sep
-            json.push('\"');
-            json.push_str(&utils::replace_escape(key));
-            json.push_str("\":");
+            json.push_str(&(cfg.control_converter)('\"'));
+            json.push_str(&(cfg.key_converter)(&utils::replace_escape(key)));
+            json.push_str(&(cfg.control_converter)('\"'));
+            json.push_str(&(cfg.control_converter)(':'));
 
             if cfg.pretty {
                 json.push(' ');
@@ -146,7 +147,7 @@ impl JsonBuilder for JsonObject {
 
             // push ,
             if index < last {
-                json.push(',');
+                json.push_str(&(cfg.control_converter)(','));
             }
         }
 
@@ -159,7 +160,7 @@ impl JsonBuilder for JsonObject {
                 json.push_str(&indents);
             }
         }
-        json.push('}');
+        json.push_str(&(cfg.control_converter)('}'));
         json
     }
 }

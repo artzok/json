@@ -93,7 +93,7 @@ impl JsonArray {
 
 impl JsonBuilder for JsonArray {
     fn build(&self, mut json: String, level: usize, cfg: &BuildConfig) -> String {
-        json.push('[');
+        json.push_str(&(cfg.control_converter)('['));
         let last = if self.is_empty() { 0 } else { self.len() - 1 };
         let indents: String = iter::repeat(cfg.indent).take(level + 1_usize).collect();
 
@@ -110,7 +110,7 @@ impl JsonBuilder for JsonArray {
 
             // push ,
             if index < last {
-                json.push(',');
+                json.push_str(&(cfg.control_converter)(','));
             }
         }
 
@@ -124,7 +124,7 @@ impl JsonBuilder for JsonArray {
             }
         }
 
-        json.push(']');
+        json.push_str(&(cfg.control_converter)(']'));
         json
     }
 }

@@ -44,11 +44,11 @@ pub enum JsonValue {
 impl JsonBuilder for JsonValue {
     fn build(&self, mut json: String, level: usize, cfg: &BuildConfig) -> String {
         match self {
-            JsonValue::Null => json.push_str("null"),
-            JsonValue::Bool(b) => json.push_str(if *b { "false" } else { "true" }),
-            JsonValue::Int(i) => json.push_str(&i.to_string()),
-            JsonValue::Uint(u) => json.push_str(&u.to_string()),
-            JsonValue::Float(d) => json.push_str(&d.to_string()),
+            JsonValue::Null => json.push_str(&(cfg.value_converter)(self, "null")),
+            JsonValue::Bool(b) => json.push_str(&(cfg.value_converter)(self, if *b { "false" } else { "true" })),
+            JsonValue::Int(i) => json.push_str(&(cfg.value_converter)(self, &i.to_string())),
+            JsonValue::Uint(u) => json.push_str(&(cfg.value_converter)(self, &u.to_string())),
+            JsonValue::Float(d) => json.push_str(&(cfg.value_converter)(self, &d.to_string())),
             JsonValue::String(s) => {
                 // 尝试将内部嵌套JSON解析出来
                 let mut parse_nest_success = false;
@@ -60,9 +60,9 @@ impl JsonBuilder for JsonValue {
                     }
                 }
                 if !parse_nest_success {
-                    json.push('\"');
-                    json.push_str(&utils::replace_escape(s));
-                    json.push('\"');
+                    json.push_str(&(cfg.control_converter)('\"'));
+                    json.push_str(&(cfg.value_converter)(self, &utils::replace_escape(s)));
+                    json.push_str(&(cfg.control_converter)('\"'));
                 }
             }
             JsonValue::Array(array) => {

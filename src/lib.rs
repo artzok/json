@@ -7,8 +7,12 @@ mod json_value;
 mod tokener;
 mod utils;
 
-use std::result;
+use std::{
+    borrow::Cow,
+    result,
+};
 
+use colored::Colorize;
 pub use error::{Error, ErrorKind};
 pub use json_array::JsonArray;
 pub use json_object::JsonObject;
@@ -46,9 +50,50 @@ pub fn parse(str: &str) -> Result<JsonValue> {
 pub type Result<T> = result::Result<T, Error>;
 
 pub struct BuildConfig<'a> {
-    pretty: bool,     // 漂亮格式化
-    indent: &'a str,  // 前导字符
-    check_nest: bool, // 检查嵌套 json
+    pretty: bool,                                                              // 漂亮格式化
+    indent: &'a str,                                                           // 前导字符
+    check_nest: bool,                                                          // 检查嵌套 json
+    value_converter: Box<dyn for<'b> Fn(&JsonValue, &'b str) -> Cow<'b, str>>, // 值转换
+    key_converter: Box<dyn Fn(&str) -> Cow<str>>,                              // 键转换
+    control_converter: Box<dyn Fn(char) -> String>,                          // 控制字符转换
+}
+
+fn default_value_convert<'a>(_: &JsonValue, text: &'a str) -> Cow<'a, str> {
+    Cow::from(text)
+}
+
+fn default_key_convert(key: &str) -> Cow<str> {
+    Cow::from(key)
+}
+
+fn default_control_convert(ctl: char) -> String {
+    ctl.to_string()
+}
+
+fn pretty_value_convert<'a>(json: &JsonValue, text: &'a str) -> Cow<'a, str> {
+    match json {
+        JsonValue::Null => Cow::from(format!("{}", text.black().bold())),
+        JsonValue::Bool(_) => Cow::from(format!("{}", text.black().bold())),
+        JsonValue::Int(_) => Cow::from(format!("{}", text.cyan().bold())),
+        JsonValue::Uint(_) => Cow::from(format!("{}", text.cyan().bold())),
+        JsonValue::Float(_) => Cow::from(format!("{}", text.cyan().bold())),
+        JsonValue::String(_) => Cow::from(format!("{}", text.red())),
+        _ => Cow::from(text),
+    }
+}
+
+fn pretty_key_convert(key: &str) -> Cow<str> {
+    Cow::from(format!("{}", key.green().bold()))
+}
+
+fn pretty_control_convert(ctl: char) -> String {
+    let colored = match ctl {
+        '\"' => ctl.to_string().red().bold(),
+        '[' |']' | '{' |'}' => ctl.to_string().red().bold(),
+        ','| ':' => ctl.to_string().bright_blue().bold(),
+        _ => ctl.to_string().black(),
+    };
+    format!("{}", colored)
 }
 
 impl<'a> BuildConfig<'a> {
@@ -57,6 +102,9 @@ impl<'a> BuildConfig<'a> {
             pretty,
             indent,
             check_nest,
+            value_converter: Box::new(pretty_value_convert),
+            key_converter: Box::new(pretty_key_convert),
+            control_converter: Box::new(pretty_control_convert),
         }
     }
     fn default() -> BuildConfig<'static> {
@@ -64,6 +112,9 @@ impl<'a> BuildConfig<'a> {
             pretty: false,
             indent: "",
             check_nest: false,
+            value_converter: Box::new(default_value_convert),
+            key_converter: Box::new(default_key_convert),
+            control_converter: Box::new(default_control_convert),
         }
     }
 
@@ -72,6 +123,9 @@ impl<'a> BuildConfig<'a> {
             pretty: true,
             indent: "| ",
             check_nest: false,
+            value_converter: Box::new(pretty_value_convert),
+            key_converter: Box::new(pretty_key_convert),
+            control_converter: Box::new(pretty_control_convert),
         }
     }
 }
