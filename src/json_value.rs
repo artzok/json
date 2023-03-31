@@ -45,7 +45,10 @@ impl JsonBuilder for JsonValue {
     fn build(&self, mut json: String, level: usize, cfg: &BuildConfig) -> String {
         match self {
             JsonValue::Null => json.push_str(&(cfg.value_converter)(self, "null")),
-            JsonValue::Bool(b) => json.push_str(&(cfg.value_converter)(self, if *b { "false" } else { "true" })),
+            JsonValue::Bool(b) => json.push_str(&(cfg.value_converter)(
+                self,
+                if *b { "false" } else { "true" },
+            )),
             JsonValue::Int(i) => json.push_str(&(cfg.value_converter)(self, &i.to_string())),
             JsonValue::Uint(u) => json.push_str(&(cfg.value_converter)(self, &u.to_string())),
             JsonValue::Float(d) => json.push_str(&(cfg.value_converter)(self, &d.to_string())),

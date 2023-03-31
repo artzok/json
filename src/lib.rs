@@ -7,10 +7,7 @@ mod json_value;
 mod tokener;
 mod utils;
 
-use std::{
-    borrow::Cow,
-    result,
-};
+use std::{borrow::Cow, result};
 
 use colored::Colorize;
 pub use error::{Error, ErrorKind};
@@ -55,7 +52,7 @@ pub struct BuildConfig<'a> {
     check_nest: bool,                                                          // 检查嵌套 json
     value_converter: Box<dyn for<'b> Fn(&JsonValue, &'b str) -> Cow<'b, str>>, // 值转换
     key_converter: Box<dyn Fn(&str) -> Cow<str>>,                              // 键转换
-    control_converter: Box<dyn Fn(char) -> String>,                          // 控制字符转换
+    control_converter: Box<dyn Fn(char) -> String>,                            // 控制字符转换
 }
 
 fn default_value_convert<'a>(_: &JsonValue, text: &'a str) -> Cow<'a, str> {
@@ -89,22 +86,34 @@ fn pretty_key_convert(key: &str) -> Cow<str> {
 fn pretty_control_convert(ctl: char) -> String {
     let colored = match ctl {
         '\"' => ctl.to_string().red().bold(),
-        '[' |']' | '{' |'}' => ctl.to_string().red().bold(),
-        ','| ':' => ctl.to_string().bright_blue().bold(),
+        '[' | ']' | '{' | '}' => ctl.to_string().red().bold(),
+        ',' | ':' => ctl.to_string().bright_blue().bold(),
         _ => ctl.to_string().black(),
     };
     format!("{}", colored)
 }
 
 impl<'a> BuildConfig<'a> {
-    pub fn new(pretty: bool, indent: &'a str, check_nest: bool) -> BuildConfig {
+    pub fn new(pretty: bool, indent: &'a str, check_nest: bool, colored: bool) -> BuildConfig {
         BuildConfig {
             pretty,
             indent,
             check_nest,
-            value_converter: Box::new(pretty_value_convert),
-            key_converter: Box::new(pretty_key_convert),
-            control_converter: Box::new(pretty_control_convert),
+            value_converter: Box::new(if colored {
+                pretty_value_convert
+            } else {
+                default_value_convert
+            }),
+            key_converter: Box::new(if colored {
+                pretty_key_convert
+            } else {
+                default_key_convert
+            }),
+            control_converter: Box::new(if colored {
+                pretty_control_convert
+            } else {
+                default_control_convert
+            }),
         }
     }
     fn default() -> BuildConfig<'static> {

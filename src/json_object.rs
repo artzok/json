@@ -3,8 +3,8 @@ use std::{borrow::Borrow, fmt::Display, hash::Hash, iter};
 use linked_hash_map::LinkedHashMap;
 
 use crate::{
-    tokener::JsonTokener, utils, Error, ErrorKind, JsonArray, JsonBuilder, JsonValue, Result,
-    ToJson, BuildConfig,
+    tokener::JsonTokener, utils, BuildConfig, Error, ErrorKind, JsonArray, JsonBuilder, JsonValue,
+    Result, ToJson,
 };
 
 /// A modifiable set of name/value mappings. Names are unique, non-null strings.
@@ -167,7 +167,11 @@ impl JsonBuilder for JsonObject {
 
 impl Display for JsonObject {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.build(String::new(), 0, &BuildConfig::pretty()))
+        write!(
+            f,
+            "{}",
+            self.build(String::new(), 0, &BuildConfig::pretty())
+        )
     }
 }
 
