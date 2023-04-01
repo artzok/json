@@ -97,21 +97,11 @@ impl<'a> BuildConfig<'a> {
             pretty,
             indent,
             check_nest,
-            value_converter: Box::new(if colored {
-                pretty_value_convert
+            ..if colored {
+                BuildConfig::pretty()
             } else {
-                default_value_convert
-            }),
-            key_converter: Box::new(if colored {
-                pretty_key_convert
-            } else {
-                default_key_convert
-            }),
-            control_converter: Box::new(if colored {
-                pretty_control_convert
-            } else {
-                default_control_convert
-            }),
+                BuildConfig::default()
+            }
         }
     }
     fn default() -> BuildConfig<'static> {
