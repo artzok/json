@@ -56,7 +56,7 @@ impl JsonBuilder for JsonValue {
                 // 尝试将内部嵌套JSON解析出来
                 let mut parse_nest_success = false;
                 if cfg.check_nest {
-                    let nest_json = super::parse(&s.replace("\\\"", "\""));
+                    let nest_json = super::parse(s);
                     if nest_json.is_ok() {
                         json = nest_json.unwrap().build(json, level, cfg);
                         parse_nest_success = true;

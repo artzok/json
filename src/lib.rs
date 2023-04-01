@@ -69,11 +69,10 @@ fn default_control_convert(ctl: char) -> String {
 
 fn pretty_value_convert<'a>(json: &JsonValue, text: &'a str) -> Cow<'a, str> {
     match json {
-        JsonValue::Null => Cow::from(format!("{}", text.black().bold())),
-        JsonValue::Bool(_) => Cow::from(format!("{}", text.black().bold())),
-        JsonValue::Int(_) => Cow::from(format!("{}", text.cyan().bold())),
-        JsonValue::Uint(_) => Cow::from(format!("{}", text.cyan().bold())),
-        JsonValue::Float(_) => Cow::from(format!("{}", text.cyan().bold())),
+        JsonValue::Null | JsonValue::Bool(_) => Cow::from(format!("{}", text.black().bold())),
+        JsonValue::Int(_) | JsonValue::Uint(_) | JsonValue::Float(_) => {
+            Cow::from(format!("{}", text.cyan().bold()))
+        }
         JsonValue::String(_) => Cow::from(format!("{}", text.red())),
         _ => Cow::from(text),
     }
@@ -85,9 +84,8 @@ fn pretty_key_convert(key: &str) -> Cow<str> {
 
 fn pretty_control_convert(ctl: char) -> String {
     let colored = match ctl {
-        '\"' => ctl.to_string().red().bold(),
         '[' | ']' | '{' | '}' => ctl.to_string().red().bold(),
-        ',' | ':' => ctl.to_string().bright_blue().bold(),
+        '"' | ',' | ':' => ctl.to_string().truecolor(128, 128, 128).bold(),
         _ => ctl.to_string().black(),
     };
     format!("{}", colored)
