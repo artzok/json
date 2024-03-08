@@ -4,7 +4,7 @@ use json::{BuildConfig, ToJson};
 fn main() {
     // 1. -f --file 指定格式化文件，否则从标准输入中读入
     // 2. -i --indent 指定前置格式符合
-    // 3. --check_nest 检查字符串中嵌套的json并解析
+    // 3. --nest 检查字符串中嵌套的json并解析
     // 4. --color 显示颜色
     let matches = command!()
         .arg(
@@ -21,8 +21,8 @@ fn main() {
                 .help("output format json indent string"),
         )
         .arg(
-            Arg::new("check_nest")
-                .long("check_nest")
+            Arg::new("nest")
+                .long("nest")
                 .action(ArgAction::SetTrue)
                 .help("checkout nest json in string and format it"),
         )
@@ -39,7 +39,7 @@ fn main() {
     let indent = matches
         .get_one::<String>("indent")
         .unwrap_or(&default_indent);
-    let check_nest = matches.get_flag("check_nest");
+    let nest = matches.get_flag("nest");
     let color = matches.get_flag("color");
 
     if files.is_none() {
@@ -48,7 +48,7 @@ fn main() {
             println!("read json error from stdin");
             std::process::exit(-1);
         });
-        format_json(&stdin, indent, check_nest, color);
+        format_json(&stdin, indent, nest, color);
     } else {
         files.unwrap().for_each(|f| {
             let json = std::fs::read_to_string(f).unwrap_or_else(|e| {
@@ -56,18 +56,18 @@ fn main() {
                 std::process::exit(-1);
             });
             println!("{}:", f);
-            format_json(&json, indent, check_nest, color);
+            format_json(&json, indent, nest, color);
         });
     }
 }
 
-fn format_json(json: &str, indent: &str, check_nest: bool, colored: bool) {
+fn format_json(json: &str, indent: &str, nest: bool, colored: bool) {
     let json = json::parse(&json).unwrap_or_else(|e| {
         println!("{}", e);
         std::process::exit(-1);
     });
     println!(
         "{}",
-        json.to_json(&BuildConfig::new(true, indent, check_nest, colored))
+        json.to_json(&BuildConfig::new(true, indent, nest, colored))
     )
 }
